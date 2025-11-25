@@ -18,6 +18,14 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
+    proxy: {
+      '/api': {
+        target: 'https://apigw.yban.co',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path,
+      },
+    },
   },
   build: {
     outDir: 'dist',

@@ -23,13 +23,23 @@
 pnpm install
 ```
 
+### 环境配置
+
+项目使用环境变量配置 API 地址，请复制 `.env.example` 并重命名为 `.env.development`：
+
+```bash
+cp .env.example .env.development
+```
+
+默认测试环境 API 地址：`https://apigw.yban.co/`
+
 ### 开发
 
 ```bash
 pnpm dev
 ```
 
-应用将在 `http://localhost:3000` 启动
+应用将在 `http://localhost:5173` 启动
 
 ### 构建
 
@@ -86,16 +96,70 @@ pnpm format
 │   ├── pages/          # 页面组件
 │   ├── routes/         # TanStack Router 路由文件
 │   ├── hooks/          # 自定义 Hooks (包含 TanStack Query hooks)
-│   ├── lib/            # 工具库 (router, query-client)
+│   ├── lib/            # 工具库
+│   │   ├── api.ts      # API 请求工具
+│   │   ├── api-client.ts # API 客户端封装
+│   │   ├── router.tsx  # 路由配置
+│   │   └── query-client.ts # QueryClient 配置
 │   ├── test/           # 测试配置
 │   ├── main.tsx        # 应用入口
 │   └── index.css       # 全局样式
 ├── public/             # 静态资源
+├── .env.development    # 开发环境变量
+├── .env.production     # 生产环境变量
+├── .env.example        # 环境变量示例
 ├── index.html          # HTML 模板
 ├── vite.config.ts      # Vite 配置
 ├── vitest.config.ts    # Vitest 配置
 └── tsconfig.json       # TypeScript 配置
 ```
+
+## API 使用
+
+### 基础配置
+
+API 基础地址通过环境变量 `VITE_API_BASE_URL` 配置，默认值为 `https://apigw.yban.co/`
+
+### 使用示例
+
+```typescript
+import { get, post, put, del } from '@/lib/api'
+
+// GET 请求
+const users = await get('/api/users', {
+  params: { page: 1, pageSize: 10 }
+})
+
+// POST 请求
+const newUser = await post('/api/users', {
+  name: '张三',
+  email: 'zhangsan@example.com'
+})
+
+// PUT 请求
+const updatedUser = await put('/api/users/123', {
+  name: '李四'
+})
+
+// DELETE 请求
+await del('/api/users/123')
+```
+
+### 在 TanStack Query 中使用
+
+```typescript
+import { useQuery } from '@tanstack/react-query'
+import { get } from '@/lib/api'
+
+function useUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: () => get('/api/users'),
+  })
+}
+```
+
+更多示例请参考 `src/lib/api.example.ts`
 
 ## 特性
 
