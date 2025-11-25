@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Button from './Button'
-import { sendVerifyCode, loginWithSms } from '../lib/auth-api'
 import { saveToken } from '../lib/auth'
+import { ReactJsonServiceClient } from '@/api/react-client'
+import { SendVerifyCodeReq, SendVerifyCodeRes } from '@/api/mall.dtos'
+import { Authenticate, AuthenticateResponse } from '@/api/auth.dtos'
 
 interface LoginSMSProps {
   onLoginSuccess?: () => void
@@ -13,8 +15,8 @@ interface LoginSMSProps {
 function LoginSMS({
   onLoginSuccess,
   privacyChecked,
-  onPrivacyChange,
-  showShake = false,
+  onPrivacyChange: _onPrivacyChange,
+  showShake: _showShake = false,
 }: LoginSMSProps) {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -44,10 +46,12 @@ function LoginSMS({
     setError('')
 
     try {
-      await sendVerifyCode({
+      const client = new ReactJsonServiceClient()
+      const request = new SendVerifyCodeReq({
         phonenumber: phone,
         codetype: 'login',
       })
+      await client.send<SendVerifyCodeRes>({ request, auth: false })
       setCodeSent(true)
       setCountdown(60)
       const timer = setInterval(() => {
@@ -87,8 +91,19 @@ function LoginSMS({
     setError('')
 
     try {
-      const authData = await loginWithSms(phone, code)
-      saveToken(authData)
+      const client = new ReactJsonServiceClient()
+      const request = new Authenticate({
+        provider: 'mobile',
+        qop: 'teacher',
+        oauth_token: '',
+        oauth_verifier: 'smsotp',
+        userName: phone,
+        password: code,
+      })
+      const response = await client.send<AuthenticateResponse>({ request, auth: false })
+      
+      // 直接使用 API 返回的 AuthenticateResponse
+      saveToken(response)
       onLoginSuccess?.()
       // 登录成功后跳转逻辑在父组件处理
     } catch (err) {
