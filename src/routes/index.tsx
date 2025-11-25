@@ -1,8 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getSchoolInfo, getSchoolId, saveSchoolInfo } from '../lib/auth'
-import { useState, useEffect } from 'react'
+import { getSchoolInfo, getSchoolId, saveSchoolInfo, setSchoolId } from '../lib/auth'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ReactJsonServiceClient } from '@/api/react-client'
 import { GetSchoolBaseInfoReq, GetSchoolBaseInfoRes } from '@/api/school.dtos'
+import {
+  GetSchoolInfosReq,
+  GetSchoolInfosRes,
+  GetTeacherMyUserInfoReq,
+  GetTeacherMyUserInfoRes,
+  TeacherMyUserInfo,
+} from '@/api/teacher.dtos'
+import { SchoolInfoDTO } from '@/api/base.dtos'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -10,40 +18,157 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   const [schoolInfo, setSchoolInfo] = useState(getSchoolInfo())
+  const [activeSchoolId, setActiveSchoolId] = useState(
+    getSchoolInfo()?.schoolId || getSchoolId() || ''
+  )
   const [currentDate, setCurrentDate] = useState('')
+  const [schoolInfos, setSchoolInfos] = useState<SchoolInfoDTO[]>([])
+  const [schoolInfosLoading, setSchoolInfosLoading] = useState(false)
+  const [schoolInfosError, setSchoolInfosError] = useState('')
+  const [schoolPanelOpen, setSchoolPanelOpen] = useState(false)
+  const [schoolSearch, setSchoolSearch] = useState('')
+  const [teacherInfo, setTeacherInfo] = useState<TeacherMyUserInfo | null>(null)
+  const [teacherInfoError, setTeacherInfoError] = useState('')
 
   useEffect(() => {
     const date = new Date()
     const formatted = new Intl.DateTimeFormat('zh-CN', {
       month: 'long',
       day: 'numeric',
-      weekday: 'long'
+      weekday: 'long',
     }).format(date)
     setCurrentDate(formatted)
+  }, [])
 
-    // School Info Fetch Logic
-    const schoolId = getSchoolId()
-    const cached = getSchoolInfo()
-    
-    if (schoolId && !cached?.schoolName) {
+  const handleSchoolChange = useCallback((school?: SchoolInfoDTO) => {
+    if (!school?.id) return
+    setActiveSchoolId(school.id)
+    setSchoolId(school.id)
+    const info = {
+      schoolId: school.id,
+      schoolName: school.name || '',
+      logo: school.logoUrl,
+      pointName: school.address,
+    }
+    saveSchoolInfo(info)
+    setSchoolInfo(info)
+    setSchoolPanelOpen(false)
+    setSchoolSearch('')
+  }, [])
+
+  const fetchSchoolInfos = useCallback(async function fetchSchoolInfosHandler() {
+    setSchoolInfosLoading(true)
+    setSchoolInfosError('')
+    try {
       const client = new ReactJsonServiceClient()
-      const request = new GetSchoolBaseInfoReq({ schoolId })
-      client.send<GetSchoolBaseInfoRes>({ request, auth: true })
-        .then(response => {
-          if (response.code === 200 && response.data) {
-            const newSchoolInfo = {
-              schoolId,
-              schoolName: response.data.name || '',
-              logo: response.data.logoUrl,
-              pointName: response.data.pointName,
-            }
-            saveSchoolInfo(newSchoolInfo)
-            setSchoolInfo(newSchoolInfo)
-          }
-        })
-        .catch(console.error)
+      const request = new GetSchoolInfosReq({ dataOnly: true })
+      const response = await client.send<GetSchoolInfosRes>({
+        request,
+        auth: true,
+      })
+
+      if (response?.ret === false) {
+        setSchoolInfosError(response.message || '获取园所列表失败')
+        setSchoolInfos([])
+        return
+      }
+
+      const list = response?.data ?? []
+      setSchoolInfos(list)
+
+      if (list.length > 0) {
+        const exists = list.find((item) => item.id === activeSchoolId)
+        const fallbackId = list[0]?.id ?? ''
+        const nextId = exists ? activeSchoolId : fallbackId
+
+        if (nextId && nextId !== activeSchoolId) {
+          handleSchoolChange(list.find((item) => item.id === nextId))
+        }
+      }
+    } catch (error) {
+      setSchoolInfosError(
+        error instanceof Error ? error.message : '获取园所列表失败'
+      )
+      setSchoolInfos([])
+    } finally {
+      setSchoolInfosLoading(false)
+    }
+  }, [activeSchoolId, handleSchoolChange])
+
+  const fetchTeacherInfo = useCallback(async function fetchTeacherInfoHandler() {
+    try {
+      setTeacherInfoError('')
+      const client = new ReactJsonServiceClient()
+      const request = new GetTeacherMyUserInfoReq({})
+      const response = await client.send<GetTeacherMyUserInfoRes>({
+        request,
+        auth: true,
+      })
+
+      if (response?.ret === false) {
+        setTeacherInfoError('无法获取教师信息')
+        setTeacherInfo(null)
+        return
+      }
+
+      setTeacherInfo(response?.data ?? null)
+    } catch (error) {
+      setTeacherInfoError(
+        error instanceof Error ? error.message : '无法获取教师信息'
+      )
+      setTeacherInfo(null)
     }
   }, [])
+
+  useEffect(() => {
+    fetchTeacherInfo()
+  }, [fetchTeacherInfo])
+
+  useEffect(() => {
+    if (!activeSchoolId) return
+    const cached = getSchoolInfo()
+
+    if (cached?.schoolId === activeSchoolId && cached.schoolName) {
+      setSchoolInfo(cached)
+      return
+    }
+
+    const client = new ReactJsonServiceClient()
+    const request = new GetSchoolBaseInfoReq({ schoolId: activeSchoolId })
+    client
+      .send<GetSchoolBaseInfoRes>({ request, auth: true })
+      .then((response) => {
+        if (response.code === 200 && response.data) {
+          const newSchoolInfo = {
+            schoolId: activeSchoolId,
+            schoolName: response.data.name || '',
+            logo: response.data.logoUrl,
+            pointName: response.data.pointName,
+          }
+          saveSchoolInfo(newSchoolInfo)
+          setSchoolInfo(newSchoolInfo)
+        }
+      })
+      .catch(console.error)
+  }, [activeSchoolId])
+
+  useEffect(() => {
+    fetchSchoolInfos()
+  }, [fetchSchoolInfos])
+
+  const filteredSchools = useMemo(() => {
+    if (!schoolSearch.trim()) return schoolInfos
+    return schoolInfos.filter((item) =>
+      (item.name || '').toLowerCase().includes(schoolSearch.trim().toLowerCase())
+    )
+  }, [schoolInfos, schoolSearch])
+
+  const teacherDisplayName =
+    teacherInfo?.fullname ||
+    teacherInfo?.displayname ||
+    teacherInfo?.nickname ||
+    teacherInfo?.username ||
+    '园务老师'
 
   // Mock Data for UI
   const features = [
@@ -82,17 +207,30 @@ function Home() {
     <div className="bg-gray-50 min-h-screen pb-20">
       {/* Header */}
       <header className="bg-white px-4 py-3 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center space-x-2">
-           <div className="bg-yellow-200 rounded-full p-1">
-             {/* Logo Placeholder */}
-             <span className="text-lg">🦒</span>
-           </div>
-           <h1 className="text-lg font-bold text-gray-800 flex items-center">
-             {schoolInfo?.schoolName || '优必思教育机构'}
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-             </svg>
-           </h1>
+        <div className="relative flex items-center space-x-2">
+          <div className="bg-yellow-200 rounded-full p-1">
+            <span className="text-lg">🦒</span>
+          </div>
+          <button
+            type="button"
+            className="text-left text-lg font-bold text-gray-800 flex items-center"
+            onClick={() => setSchoolPanelOpen(true)}
+          >
+            {schoolInfo?.schoolName || '选择园所'}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 ml-1 text-gray-500"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+
         </div>
         <button className="text-gray-600">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,7 +310,203 @@ function Home() {
             ))}
           </div>
         </div>
+
+        {/* School infos debug panel */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-dashed border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-base font-semibold text-gray-900">
+                园所接口数据
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                GetSchoolInfosReq
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchSchoolInfos}
+              disabled={schoolInfosLoading}
+              className="px-3 py-1 text-xs rounded-full border border-gray-200 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {schoolInfosLoading ? '拉取中...' : '重新拉取'}
+            </button>
+          </div>
+          {schoolInfosError && (
+            <p className="text-sm text-red-500 mt-3">{schoolInfosError}</p>
+          )}
+          {!schoolInfosError && (
+            <div className="mt-3 space-y-3">
+              {schoolInfosLoading && (
+                <p className="text-sm text-gray-500">数据加载中...</p>
+              )}
+              {!schoolInfosLoading && schoolInfos.length === 0 && (
+                <p className="text-sm text-gray-500">暂无返回数据</p>
+              )}
+              {!schoolInfosLoading && schoolInfos.length > 0 && (
+                <>
+                  <div className="space-y-3">
+                    {schoolInfos.slice(0, 3).map((info) => (
+                      <div
+                        key={info.id || info.name}
+                        className="rounded-lg border border-gray-100 px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-gray-900">
+                          {info.name || '未命名园所'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          ID: {info.id || '暂无'}
+                        </p>
+                        {info.province && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {info.province}
+                            {info.city ? `·${info.city}` : ''}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 max-h-64 overflow-auto">
+                    <pre className="text-[10px] leading-4 text-gray-700 whitespace-pre-wrap break-all font-mono">
+                      {JSON.stringify(schoolInfos.slice(0, 3), null, 2)}
+                    </pre>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    共返回 {schoolInfos.length} 条数据，以上展示前 3 条及原始 JSON。
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+      {schoolPanelOpen && (
+        <div className="fixed inset-0 z-30">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setSchoolPanelOpen(false)}
+          />
+          <div className="relative h-full w-11/12 max-w-sm bg-white rounded-r-3xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-400 text-white px-6 pb-10 pt-12 rounded-br-[48px]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-white/80">当前用户</p>
+                  <p className="text-2xl font-semibold mt-1">{teacherDisplayName}</p>
+                  {teacherInfo?.username && (
+                    <p className="text-xs text-white/70 mt-1">
+                      账号：{teacherInfo.username}
+                    </p>
+                  )}
+                  {teacherInfoError && (
+                    <p className="text-xs text-white/70 mt-1">{teacherInfoError}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="text-white/80"
+                  onClick={() => setSchoolPanelOpen(false)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.59-9.41a1 1 0 10-1.41 1.41L8.59 10l-1.6 1.59a1 1 0 101.42 1.41L10 11.41l1.59 1.6a1 1 0 001.41-1.42L11.42 10l1.58-1.59a1 1 0 00-1.41-1.41L10 8.59 8.41 7z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 -mt-6">
+              <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+                  />
+                </svg>
+                <input
+                  type="search"
+                  value={schoolSearch}
+                  onChange={(event) => setSchoolSearch(event.target.value)}
+                  placeholder="搜索园所"
+                  className="ml-2 w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                />
+                {schoolSearch && (
+                  <button
+                    type="button"
+                    className="text-gray-400"
+                    onClick={() => setSchoolSearch('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 h-[60%] overflow-y-auto px-5 pb-8">
+              {schoolInfosLoading && (
+                <p className="text-sm text-gray-400 py-3">园所列表加载中...</p>
+              )}
+              {!schoolInfosLoading && filteredSchools.length === 0 && (
+                <p className="text-sm text-gray-400 py-3">未找到匹配的园所</p>
+              )}
+              <div className="space-y-3">
+                {filteredSchools.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSchoolChange(item)}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
+                      item.id === activeSchoolId
+                        ? 'border-orange-200 bg-orange-50'
+                        : 'border-gray-100 bg-white hover:border-orange-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-base font-semibold text-gray-900">
+                        {item.name || '未命名园所'}
+                      </p>
+                      {item.id === activeSchoolId && (
+                        <span className="text-green-500">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8.25 8.25a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L7.75 12.836l7.543-7.543a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {item.address || '暂无地址信息'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
