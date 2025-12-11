@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   useQuery,
   useMutation,
   useQueryClient,
-  type QueryClient,
 } from '@tanstack/react-query'
 import { useMemo, useState, useEffect } from 'react'
 
@@ -98,6 +97,12 @@ function TenStackDemo(): JSX.Element {
           <p className="text-sm text-gray-500">TanStack Query 示例</p>
           <h1 className="text-xl font-semibold text-gray-900">TenStack Playground</h1>
         </div>
+        <Link
+          to="/react-playground"
+          className="text-xs text-orange-600 underline underline-offset-4"
+        >
+          React 练习页
+        </Link>
         <button
           type="button"
           className="px-3 py-1 rounded-full text-sm text-gray-600 border border-gray-200"

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useSchoolData } from '@/hooks/use-schools'
 import { useTeacherInfo } from '@/hooks/use-teacher-info'
@@ -96,6 +96,14 @@ function Home(): JSX.Element {
     { type: '销售', content: '有7条线索7天以上未跟进', color: 'bg-purple-400' },
   ]
 
+  const reactLinks = [
+    { to: '/react-playground', label: '练习页列表' },
+    { to: '/react-effect', label: 'useEffect' },
+    { to: '/react-memo', label: 'useMemo' },
+    { to: '/react-callback', label: 'useCallback' },
+    { to: '/react-suspense', label: 'Suspense' },
+  ] as const
+
   return (
     <div className="pb-20 min-h-screen bg-gray-50">
       {/* Header */}
@@ -147,6 +155,20 @@ function Home(): JSX.Element {
       </div>
 
       <div className="px-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">React 学习与示例</p>
+          <div className="flex flex-wrap gap-2">
+            {reactLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="px-3 py-1 text-xs text-orange-700 bg-orange-50 border border-orange-100 rounded-full hover:bg-orange-100"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
         {/* Date & Refresh */}
         <div className="p-4 bg-white rounded-xl shadow-sm">
           <div className="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">

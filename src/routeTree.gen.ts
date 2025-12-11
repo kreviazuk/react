@@ -10,12 +10,42 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TenstackRouteImport } from './routes/tenstack'
+import { Route as ReactSuspenseRouteImport } from './routes/react-suspense'
+import { Route as ReactPlaygroundRouteImport } from './routes/react-playground'
+import { Route as ReactMemoRouteImport } from './routes/react-memo'
+import { Route as ReactEffectRouteImport } from './routes/react-effect'
+import { Route as ReactCallbackRouteImport } from './routes/react-callback'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TenstackRoute = TenstackRouteImport.update({
   id: '/tenstack',
   path: '/tenstack',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactSuspenseRoute = ReactSuspenseRouteImport.update({
+  id: '/react-suspense',
+  path: '/react-suspense',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactPlaygroundRoute = ReactPlaygroundRouteImport.update({
+  id: '/react-playground',
+  path: '/react-playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactMemoRoute = ReactMemoRouteImport.update({
+  id: '/react-memo',
+  path: '/react-memo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactEffectRoute = ReactEffectRouteImport.update({
+  id: '/react-effect',
+  path: '/react-effect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactCallbackRoute = ReactCallbackRouteImport.update({
+  id: '/react-callback',
+  path: '/react-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -32,30 +62,75 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/react-callback': typeof ReactCallbackRoute
+  '/react-effect': typeof ReactEffectRoute
+  '/react-memo': typeof ReactMemoRoute
+  '/react-playground': typeof ReactPlaygroundRoute
+  '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/react-callback': typeof ReactCallbackRoute
+  '/react-effect': typeof ReactEffectRoute
+  '/react-memo': typeof ReactMemoRoute
+  '/react-playground': typeof ReactPlaygroundRoute
+  '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/react-callback': typeof ReactCallbackRoute
+  '/react-effect': typeof ReactEffectRoute
+  '/react-memo': typeof ReactMemoRoute
+  '/react-playground': typeof ReactPlaygroundRoute
+  '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/tenstack'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/react-callback'
+    | '/react-effect'
+    | '/react-memo'
+    | '/react-playground'
+    | '/react-suspense'
+    | '/tenstack'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/tenstack'
-  id: '__root__' | '/' | '/login' | '/tenstack'
+  to:
+    | '/'
+    | '/login'
+    | '/react-callback'
+    | '/react-effect'
+    | '/react-memo'
+    | '/react-playground'
+    | '/react-suspense'
+    | '/tenstack'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/react-callback'
+    | '/react-effect'
+    | '/react-memo'
+    | '/react-playground'
+    | '/react-suspense'
+    | '/tenstack'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ReactCallbackRoute: typeof ReactCallbackRoute
+  ReactEffectRoute: typeof ReactEffectRoute
+  ReactMemoRoute: typeof ReactMemoRoute
+  ReactPlaygroundRoute: typeof ReactPlaygroundRoute
+  ReactSuspenseRoute: typeof ReactSuspenseRoute
   TenstackRoute: typeof TenstackRoute
 }
 
@@ -66,6 +141,41 @@ declare module '@tanstack/react-router' {
       path: '/tenstack'
       fullPath: '/tenstack'
       preLoaderRoute: typeof TenstackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-suspense': {
+      id: '/react-suspense'
+      path: '/react-suspense'
+      fullPath: '/react-suspense'
+      preLoaderRoute: typeof ReactSuspenseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-playground': {
+      id: '/react-playground'
+      path: '/react-playground'
+      fullPath: '/react-playground'
+      preLoaderRoute: typeof ReactPlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-memo': {
+      id: '/react-memo'
+      path: '/react-memo'
+      fullPath: '/react-memo'
+      preLoaderRoute: typeof ReactMemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-effect': {
+      id: '/react-effect'
+      path: '/react-effect'
+      fullPath: '/react-effect'
+      preLoaderRoute: typeof ReactEffectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-callback': {
+      id: '/react-callback'
+      path: '/react-callback'
+      fullPath: '/react-callback'
+      preLoaderRoute: typeof ReactCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -88,6 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ReactCallbackRoute: ReactCallbackRoute,
+  ReactEffectRoute: ReactEffectRoute,
+  ReactMemoRoute: ReactMemoRoute,
+  ReactPlaygroundRoute: ReactPlaygroundRoute,
+  ReactSuspenseRoute: ReactSuspenseRoute,
   TenstackRoute: TenstackRoute,
 }
 export const routeTree = rootRouteImport
