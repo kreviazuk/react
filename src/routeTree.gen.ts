@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TenstackRouteImport } from './routes/tenstack'
 import { Route as ReactSuspenseRouteImport } from './routes/react-suspense'
+import { Route as ReactQueryRouteImport } from './routes/react-query'
 import { Route as ReactPlaygroundRouteImport } from './routes/react-playground'
 import { Route as ReactMemoRouteImport } from './routes/react-memo'
+import { Route as ReactFormRouteImport } from './routes/react-form'
 import { Route as ReactEffectRouteImport } from './routes/react-effect'
+import { Route as ReactEditProfileRouteImport } from './routes/react-edit-profile'
 import { Route as ReactCallbackRouteImport } from './routes/react-callback'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +31,11 @@ const ReactSuspenseRoute = ReactSuspenseRouteImport.update({
   path: '/react-suspense',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReactQueryRoute = ReactQueryRouteImport.update({
+  id: '/react-query',
+  path: '/react-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReactPlaygroundRoute = ReactPlaygroundRouteImport.update({
   id: '/react-playground',
   path: '/react-playground',
@@ -38,9 +46,19 @@ const ReactMemoRoute = ReactMemoRouteImport.update({
   path: '/react-memo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReactFormRoute = ReactFormRouteImport.update({
+  id: '/react-form',
+  path: '/react-form',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReactEffectRoute = ReactEffectRouteImport.update({
   id: '/react-effect',
   path: '/react-effect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReactEditProfileRoute = ReactEditProfileRouteImport.update({
+  id: '/react-edit-profile',
+  path: '/react-edit-profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReactCallbackRoute = ReactCallbackRouteImport.update({
@@ -63,9 +81,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/react-callback': typeof ReactCallbackRoute
+  '/react-edit-profile': typeof ReactEditProfileRoute
   '/react-effect': typeof ReactEffectRoute
+  '/react-form': typeof ReactFormRoute
   '/react-memo': typeof ReactMemoRoute
   '/react-playground': typeof ReactPlaygroundRoute
+  '/react-query': typeof ReactQueryRoute
   '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
@@ -73,9 +94,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/react-callback': typeof ReactCallbackRoute
+  '/react-edit-profile': typeof ReactEditProfileRoute
   '/react-effect': typeof ReactEffectRoute
+  '/react-form': typeof ReactFormRoute
   '/react-memo': typeof ReactMemoRoute
   '/react-playground': typeof ReactPlaygroundRoute
+  '/react-query': typeof ReactQueryRoute
   '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
@@ -84,9 +108,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/react-callback': typeof ReactCallbackRoute
+  '/react-edit-profile': typeof ReactEditProfileRoute
   '/react-effect': typeof ReactEffectRoute
+  '/react-form': typeof ReactFormRoute
   '/react-memo': typeof ReactMemoRoute
   '/react-playground': typeof ReactPlaygroundRoute
+  '/react-query': typeof ReactQueryRoute
   '/react-suspense': typeof ReactSuspenseRoute
   '/tenstack': typeof TenstackRoute
 }
@@ -96,9 +123,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/react-callback'
+    | '/react-edit-profile'
     | '/react-effect'
+    | '/react-form'
     | '/react-memo'
     | '/react-playground'
+    | '/react-query'
     | '/react-suspense'
     | '/tenstack'
   fileRoutesByTo: FileRoutesByTo
@@ -106,9 +136,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/react-callback'
+    | '/react-edit-profile'
     | '/react-effect'
+    | '/react-form'
     | '/react-memo'
     | '/react-playground'
+    | '/react-query'
     | '/react-suspense'
     | '/tenstack'
   id:
@@ -116,9 +149,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/react-callback'
+    | '/react-edit-profile'
     | '/react-effect'
+    | '/react-form'
     | '/react-memo'
     | '/react-playground'
+    | '/react-query'
     | '/react-suspense'
     | '/tenstack'
   fileRoutesById: FileRoutesById
@@ -127,9 +163,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   ReactCallbackRoute: typeof ReactCallbackRoute
+  ReactEditProfileRoute: typeof ReactEditProfileRoute
   ReactEffectRoute: typeof ReactEffectRoute
+  ReactFormRoute: typeof ReactFormRoute
   ReactMemoRoute: typeof ReactMemoRoute
   ReactPlaygroundRoute: typeof ReactPlaygroundRoute
+  ReactQueryRoute: typeof ReactQueryRoute
   ReactSuspenseRoute: typeof ReactSuspenseRoute
   TenstackRoute: typeof TenstackRoute
 }
@@ -150,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReactSuspenseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/react-query': {
+      id: '/react-query'
+      path: '/react-query'
+      fullPath: '/react-query'
+      preLoaderRoute: typeof ReactQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/react-playground': {
       id: '/react-playground'
       path: '/react-playground'
@@ -164,11 +210,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReactMemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/react-form': {
+      id: '/react-form'
+      path: '/react-form'
+      fullPath: '/react-form'
+      preLoaderRoute: typeof ReactFormRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/react-effect': {
       id: '/react-effect'
       path: '/react-effect'
       fullPath: '/react-effect'
       preLoaderRoute: typeof ReactEffectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/react-edit-profile': {
+      id: '/react-edit-profile'
+      path: '/react-edit-profile'
+      fullPath: '/react-edit-profile'
+      preLoaderRoute: typeof ReactEditProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/react-callback': {
@@ -199,9 +259,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   ReactCallbackRoute: ReactCallbackRoute,
+  ReactEditProfileRoute: ReactEditProfileRoute,
   ReactEffectRoute: ReactEffectRoute,
+  ReactFormRoute: ReactFormRoute,
   ReactMemoRoute: ReactMemoRoute,
   ReactPlaygroundRoute: ReactPlaygroundRoute,
+  ReactQueryRoute: ReactQueryRoute,
   ReactSuspenseRoute: ReactSuspenseRoute,
   TenstackRoute: TenstackRoute,
 }

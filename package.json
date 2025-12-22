@@ -14,12 +14,15 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
+    "@tanstack/react-form": "^1.27.5",
     "@tanstack/react-query": "^5.56.2",
     "@tanstack/react-router": "^1.80.0",
     "@tanstack/router-devtools": "^1.80.0",
+    "@tanstack/zod-form-adapter": "^0.42.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "ts-md5": "^2.0.1"
+    "ts-md5": "^2.0.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tanstack/router-plugin": "^1.80.0",

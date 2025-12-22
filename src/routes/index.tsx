@@ -102,6 +102,9 @@ function Home(): JSX.Element {
     { to: '/react-memo', label: 'useMemo' },
     { to: '/react-callback', label: 'useCallback' },
     { to: '/react-suspense', label: 'Suspense' },
+    { to: '/react-form', label: 'TanStack Form' },
+    { to: '/react-query', label: 'TanStack Query' },
+    { to: '/react-edit-profile', label: 'Query + Form (编辑页)' },
   ] as const
 
   return (
