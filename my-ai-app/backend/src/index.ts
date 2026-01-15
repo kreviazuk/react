@@ -1,16 +1,21 @@
 import Koa from 'koa';
-import Router from '@koa/router';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import dotenv from 'dotenv';
 
+import { koaSwagger } from 'koa2-swagger-ui';
+import { swaggerSpec } from './config/swagger';
 import router from './routes';
 
 dotenv.config();
 
 const app = new Koa();
-// const router = new Router(); // Logic moved to routes/index.ts
 const PORT = process.env.PORT || 8000;
+
+app.use(koaSwagger({
+    routePrefix: '/docs', 
+    swaggerOptions: { spec: swaggerSpec as Record<string, unknown> },
+}));
 
 // Middleware
 app.use(cors({
