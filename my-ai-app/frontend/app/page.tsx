@@ -2,65 +2,86 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { z } from "zod"
+import { useForm } from '@tanstack/react-form'
+import { zodValidator } from '@tanstack/zod-form-adapter'
+import { toast } from "sonner"
+import { Bot, Loader2 } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, CheckCircle2, Bot } from "lucide-react"
 import { login, register } from "@/api/auth"
+
+// Define validation schemas
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+})
+
+const registerSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+})
 
 export default function AuthPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
   const [activeTab, setActiveTab] = useState("login")
 
-  async function onLogin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setIsLoading(true)
-    setError("")
-    setSuccess("")
+  // --- Login Form ---
+  const loginForm = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    validatorAdapter: zodValidator(),
+    validators: {
+        onChange: loginSchema
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        const data = await login(value)
+        localStorage.setItem("token", data.access_token)
+        toast.success("Welcome back!", {
+            description: "You have successfully logged in."
+        })
+        // router.push("/dashboard") 
+      } catch (err: any) {
+        toast.error("Login Failed", {
+            description: err.message
+        })
+      }
+    },
+  })
 
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-
-    try {
-      const data = await login({ email, password })
-      
-      localStorage.setItem("token", data.access_token)
-      setSuccess("Login successful! Token saved.")
-      // router.push("/dashboard") 
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  async function onRegister(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setIsLoading(true)
-    setError("")
-    setSuccess("")
-
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-
-    try {
-      await register({ email, password })
-
-      setSuccess("Account created! Please login.")
-      setActiveTab("login") // Switch to login tab
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // --- Register Form ---
+  const registerForm = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    validatorAdapter: zodValidator(),
+    validators: {
+        onChange: registerSchema
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        await register(value)
+        toast.success("Account Created", {
+            description: "Please log in with your new account."
+        })
+        setActiveTab("login")
+        // Reset login form for convenience?
+        loginForm.setFieldValue('email', value.email)
+      } catch (err: any) {
+        toast.error("Registration Failed", {
+            description: err.message
+        })
+      }
+    },
+  })
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
@@ -86,33 +107,65 @@ export default function AuthPage() {
                 Enter your password to sign in to your account.
               </CardDescription>
             </CardHeader>
-            <form onSubmit={onLogin}>
+            <form onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                loginForm.handleSubmit()
+            }}>
               <CardContent className="space-y-4">
-                {error && (
-                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                        <AlertCircle className="h-4 w-4" />
-                        {error}
-                    </div>
-                )}
-                {success && (
-                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-500/10 p-3 rounded-md">
-                        <CheckCircle2 className="h-4 w-4" />
-                        {success}
-                    </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" placeholder="m@example.com" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" name="password" type="password" required />
-                </div>
+                <loginForm.Field
+                    name="email"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor="login-email">Email</Label>
+                            <Input 
+                                id="login-email" 
+                                placeholder="m@example.com"
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                            {field.state.meta.errors ? (
+                                <p className="text-sm text-destructive">
+                                    {field.state.meta.errors.map((err) => err?.message || err).join(", ")}
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
+                />
+                <loginForm.Field
+                    name="password"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor="login-password">Password</Label>
+                            <Input 
+                                id="login-password" 
+                                type="password"
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                             {field.state.meta.errors ? (
+                                <p className="text-sm text-destructive">
+                                    {field.state.meta.errors.map((err) => err?.message || err).join(", ")}
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
+                />
               </CardContent>
               <CardFooter className="flex flex-col gap-4">
-                <Button className="w-full" type="submit" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
+                <loginForm.Subscribe
+                  selector={(state) => [state.canSubmit, state.isSubmitting]}
+                  children={([canSubmit, isSubmitting]) => (
+                    <Button className="w-full" type="submit" disabled={!canSubmit || isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting ? "Signing in..." : "Sign In"}
+                    </Button>
+                  )}
+                />
                 <p className="px-8 text-center text-xs text-muted-foreground">
                     By clicking continue, you agree to our{" "}
                     <a href="/terms" className="underline underline-offset-4 hover:text-primary">Terms</a>
@@ -132,27 +185,65 @@ export default function AuthPage() {
                 Enter your email below to create your account.
               </CardDescription>
             </CardHeader>
-            <form onSubmit={onRegister}>
+             <form onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                registerForm.handleSubmit()
+            }}>
               <CardContent className="space-y-4">
-                 {error && (
-                    <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                        <AlertCircle className="h-4 w-4" />
-                        {error}
-                    </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
-                  <Input id="register-email" name="email" type="email" placeholder="m@example.com" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">Password</Label>
-                  <Input id="register-password" name="password" type="password" required />
-                </div>
+                 <registerForm.Field
+                    name="email"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor="reg-email">Email</Label>
+                            <Input 
+                                id="reg-email" 
+                                placeholder="m@example.com"
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                            {field.state.meta.errors ? (
+                                <p className="text-sm text-destructive">
+                                    {field.state.meta.errors.map((err) => err?.message || err).join(", ")}
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
+                />
+                <registerForm.Field
+                    name="password"
+                    children={(field) => (
+                        <div className="space-y-2">
+                            <Label htmlFor="reg-password">Password</Label>
+                            <Input 
+                                id="reg-password" 
+                                type="password"
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                            />
+                             {field.state.meta.errors ? (
+                                <p className="text-sm text-destructive">
+                                    {field.state.meta.errors.map((err) => err?.message || err).join(", ")}
+                                </p>
+                            ) : null}
+                        </div>
+                    )}
+                />
               </CardContent>
               <CardFooter>
-                <Button className="w-full" type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create Account"}
-                </Button>
+                <registerForm.Subscribe
+                  selector={(state) => [state.canSubmit, state.isSubmitting]}
+                  children={([canSubmit, isSubmitting]) => (
+                    <Button className="w-full" type="submit" disabled={!canSubmit || isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting ? "Creating account..." : "Create Account"}
+                    </Button>
+                  )}
+                />
               </CardFooter>
             </form>
           </Card>
