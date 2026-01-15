@@ -1,8 +1,16 @@
 import Router from '@koa/router';
 import authRoutes from './auth';
+import userRoutes from './user';
 
 const router = new Router({ prefix: '/api' });
-// Mount Auth Routes (at root of /api, so /api/login)
+
+// Health Check
+router.get('/health', (ctx) => {
+  ctx.body = { status: 'healthy', backend: 'koa' };
+});
+
+// Mount Routes
 router.use(authRoutes.routes(), authRoutes.allowedMethods());
+router.use(userRoutes.routes(), userRoutes.allowedMethods());
 
 export default router;

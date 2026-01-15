@@ -57,7 +57,7 @@ router.post('/register', async (ctx) => {
 
   if (!email || !password) {
     ctx.status = 400;
-    ctx.body = { message: 'Email and password are required' };
+    ctx.body = { message: '邮箱和密码不能为空' };
     return;
   }
 
@@ -65,7 +65,7 @@ router.post('/register', async (ctx) => {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       ctx.status = 400;
-      ctx.body = { message: 'Email already registered' };
+      ctx.body = { message: '该邮箱已被注册' };
       return;
     }
 
@@ -131,7 +131,7 @@ router.post('/login', async (ctx) => {
 
   if (!email || !password) {
     ctx.status = 400;
-    ctx.body = { message: 'Email and password are required' };
+    ctx.body = { message: '邮箱和密码不能为空' };
     return;
   }
 
@@ -139,7 +139,7 @@ router.post('/login', async (ctx) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       ctx.status = 401;
-      ctx.body = { message: 'Invalid credentials' };
+      ctx.body = { message: '账号或密码错误' };
       return;
     }
 
@@ -148,7 +148,7 @@ router.post('/login', async (ctx) => {
   } catch (error) {
     console.error(error);
     ctx.status = 500;
-    ctx.body = { message: 'Internal server error' };
+    ctx.body = { message: '服务器内部错误' };
   }
 });
 
