@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertCircle, CheckCircle2, Bot } from "lucide-react"
+import { login, register } from "@/api/auth"
 
 export default function AuthPage() {
   const router = useRouter()
@@ -27,17 +28,9 @@ export default function AuthPage() {
     const password = formData.get("password") as string
 
     try {
-      const res = await fetch("http://localhost:8000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) throw new Error("Invalid email or password")
-
-      const data = await res.json()
+      const data = await login({ email, password })
+      
       localStorage.setItem("token", data.access_token)
-      // For demo purposes, we just show success. In real app -> router.push('/dashboard')
       setSuccess("Login successful! Token saved.")
       // router.push("/dashboard") 
     } catch (err: any) {
@@ -58,16 +51,7 @@ export default function AuthPage() {
     const password = formData.get("password") as string
 
     try {
-      const res = await fetch("http://localhost:8000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.detail || "Registration failed")
-      }
+      await register({ email, password })
 
       setSuccess("Account created! Please login.")
       setActiveTab("login") // Switch to login tab
