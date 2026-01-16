@@ -143,8 +143,17 @@ router.post('/login', async (ctx) => {
       return;
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
-    ctx.body = { access_token: token, token_type: 'bearer' };
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    ctx.body = { 
+        access_token: token, 
+        token_type: 'bearer',
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
+    };
   } catch (error) {
     console.error(error);
     ctx.status = 500;

@@ -47,7 +47,7 @@ export default function AuthPage() {
         toast.success("Welcome back!", {
             description: "You have successfully logged in."
         })
-        // router.push("/dashboard") 
+        router.push("/home") 
       } catch (err: any) {
         toast.error("Login Failed", {
             description: err.message

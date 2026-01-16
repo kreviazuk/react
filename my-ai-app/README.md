@@ -1,11 +1,11 @@
 # My AI App
 
-这是一个基于 Next.js 和 FastAPI 构建的全栈 AI 应用。
+这是一个基于 Next.js 和 Node.js (Koa) 构建的全栈 AI 应用。
 
 ## 项目结构
 
 - **frontend/**: Next.js 14+ (App Router), Tailwind CSS (v4), Shadcn UI, Vercel AI SDK, TanStack Query.
-- **backend/**: FastAPI, Python 3.10+, Alembic (数据库迁移).
+- **backend/**: Node.js (Koa), TypeScript, Prisma (ORM), Swagger UI.
 
 ## 🚀 快速开始 (Getting Started)
 
@@ -19,20 +19,15 @@
 # 进入后端目录
 cd backend
 
-# 创建虚拟环境
-python3 -m venv venv
-
-# 激活虚拟环境
-# macOS / Linux:
-source venv/bin/activate
-# Windows:
-# .\venv\Scripts\activate
-
 # 安装依赖
-pip install -r requirements.txt
+npm install
+
+# 确保数据库已运行（参考下方数据库章节）并执行 Prisma 生成/迁移
+# npx prisma generate
+# npx prisma migrate dev
 
 # 启动开发服务器
-uvicorn main:app --reload
+npm run dev
 ```
 
 启动成功后，访问 [http://localhost:8000/docs](http://localhost:8000/docs) 查看 API 文档。
@@ -57,8 +52,8 @@ npm run dev
 ## 开发说明
 
 - **前端开发**: 编辑 `frontend/app` 下的文件，页面会自动热更新。CSS 变量配置在 `frontend/app/globals.css`。
-- **后端开发**: 编辑 `backend/main.py` 或添加新的 API 路由，FastAPI 会自动重载。
-- **跨域 (CORS)**: 后端 `main.py` 中已预配置允许 `http://localhost:3001` 的请求。
+- **后端开发**: 编辑 `backend/src` 下的文件，`nodemon` 会自动重启服务。
+- **跨域 (CORS)**: 后端已配置允许本地前端的跨域请求。
 
 ## 🗄️ 数据库 (Database)
 
