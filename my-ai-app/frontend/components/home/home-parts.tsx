@@ -3,6 +3,8 @@
 import { Bell, Search, ScanLine, ArrowRight, Star, ScrollText, FlaskConical, Brain, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useBooks } from "@/hooks/useBooks";
+import Link from "next/link";
 
 // === Header ===
 export function HomeHeader() {
@@ -69,8 +71,6 @@ export function HeroBanner() {
 
       {/* Decorative Book/Glasses Image (Mock) */}
       <div className="absolute bottom-0 right-0 w-[45%] h-[80%] opacity-90">
-         {/* Representing the book lines/glasses with a simple graphic or image if available */}
-         {/* Using a placeholder gradient/shape for visual weight */}
          <div className="w-full h-full bg-gradient-to-tl from-black/20 to-transparent rounded-tl-[100px]"></div>
       </div>
     </div>
@@ -78,13 +78,13 @@ export function HeroBanner() {
 }
 
 // === New Arrivals ===
-const NEW_ARRIVALS = [
-    { title: "The Fraud", author: "Zadie Smith", color: "bg-purple-200" },
-    { title: "Yellowface", author: "R.F. Kuang", color: "bg-green-800" },
-    { title: "Tomorrow...", author: "Gabrielle Zevin", color: "bg-orange-700" },
-];
-
 export function NewArrivals() {
+    const { data: books, isLoading } = useBooks();
+
+    if (isLoading) return <div className="mb-10 px-6">Loading new arrivals...</div>;
+
+    const recentBooks = books?.slice(0, 5) || [];
+
     return (
         <div className="mb-10">
             <div className="flex justify-between items-center mb-4 px-1">
@@ -93,19 +93,24 @@ export function NewArrivals() {
             </div>
             
             <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar snap-x">
-                {NEW_ARRIVALS.map((book, i) => (
-                    <div key={i} className="flex-shrink-0 w-32 snap-center">
-                        <div className={`h-48 ${book.color} rounded-xl shadow-md mb-3 relative overflow-hidden group`}>
+                {recentBooks.map((book) => (
+                    <Link href={`/books/${book.id}`} key={book.id} className="flex-shrink-0 w-32 snap-center block">
+                        <div className={`h-48 bg-gray-100 rounded-xl shadow-md mb-3 relative overflow-hidden group`}>
                              {/* Book Spine Mock */}
-                             <div className="absolute left-2 top-0 bottom-0 w-1 bg-black/10"></div>
-                             <div className="w-full h-full flex items-center justify-center p-2 text-center">
-                                 <span className="text-white/50 text-xs font-serif italic">{book.title}</span>
-                             </div>
+                             <div className="absolute left-1 top-0 bottom-0 w-1 bg-black/5 z-10"></div>
+                             {book.coverImage ? (
+                                <img src={book.coverImage} alt={book.title} className="w-full h-full object-cover" />
+                             ) : (
+                                <div className="w-full h-full flex items-center justify-center p-2 text-center bg-blue-100">
+                                     <span className="text-blue-900/50 text-xs font-serif italic">{book.title}</span>
+                                </div>
+                             )}
                         </div>
-                        <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1">{book.title}</h4>
-                        <p className="text-gray-500 text-xs">{book.author}</p>
-                    </div>
+                        <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{book.title}</h4>
+                        <p className="text-gray-500 text-xs truncate">{book.author}</p>
+                    </Link>
                 ))}
+                {recentBooks.length === 0 && <p className="text-gray-400 text-sm">No new books yet.</p>}
             </div>
         </div>
     )
@@ -142,47 +147,39 @@ export function CategoryGrid() {
 
 // === Recommended ===
 export function RecommendedList() {
+    const { data: books } = useBooks();
+    // Just pick different ones or random ones for demo
+    const recommended = books?.slice(0, 3) || [];
+
     return (
         <div className="mb-8">
              <h3 className="text-xl font-bold text-gray-900 mb-4 px-1">Recommended for You</h3>
              <div className="space-y-4">
-                 {/* Card 1 */}
-                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
-                     <div className="w-16 h-24 bg-slate-900 rounded-lg shadow-sm flex-shrink-0"></div>
-                     <div className="flex-1">
-                         <div className="flex justify-between items-start mb-1">
-                             <h4 className="font-bold text-gray-900">The Midnight Library</h4>
-                             <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                                <Star size={8} fill="currentColor" /> 4.8
-                             </span>
+                 {recommended.map(book => (
+                     <Link href={`/books/${book.id}`} key={book.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center block">
+                         <div className="w-16 h-24 bg-gray-200 rounded-lg shadow-sm flex-shrink-0 overflow-hidden">
+                            {book.coverImage ? (
+                                <img src={book.coverImage} alt={book.title} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Img</div>
+                            )}
                          </div>
-                         <p className="text-gray-500 text-xs mb-3">Matt Haig</p>
-                         
-                         <div className="flex justify-between items-center">
-                             <span className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded">Available</span>
-                             <button className="text-[#134E4A] text-xs font-bold">Borrow</button>
+                         <div className="flex-1">
+                             <div className="flex justify-between items-start mb-1">
+                                 <h4 className="font-bold text-gray-900 line-clamp-1">{book.title}</h4>
+                                 <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                                    <Star size={8} fill="currentColor" /> 4.5
+                                 </span>
+                             </div>
+                             <p className="text-gray-500 text-xs mb-3">{book.author}</p>
+                             
+                             <div className="flex justify-between items-center">
+                                 <span className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded">Available</span>
+                                 <button className="text-[#134E4A] text-xs font-bold">Borrow</button>
+                             </div>
                          </div>
-                     </div>
-                 </div>
-
-                 {/* Card 2 */}
-                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
-                     <div className="w-16 h-24 bg-olive-800 bg-[#546e3d] rounded-lg shadow-sm flex-shrink-0"></div>
-                     <div className="flex-1">
-                         <div className="flex justify-between items-start mb-1">
-                             <h4 className="font-bold text-gray-900">Thinking, Fast and Slow</h4>
-                             <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                                <Star size={8} fill="currentColor" /> 4.5
-                             </span>
-                         </div>
-                         <p className="text-gray-500 text-xs mb-3">Daniel Kahneman</p>
-                         
-                         <div className="flex justify-between items-center">
-                             <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded">Waitlist: 2 wks</span>
-                             <button className="text-[#134E4A] text-xs font-bold">Place Hold</button>
-                         </div>
-                     </div>
-                 </div>
+                     </Link>
+                 ))}
              </div>
         </div>
     )

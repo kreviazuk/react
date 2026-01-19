@@ -103,7 +103,70 @@ export const createBook = async (ctx: Context) => {
     }
 
     // 情况 C: 其他内部错误
+    // ... (existing error handling)
     ctx.status = 500;
     ctx.body = { success: false, error: 'Internal Server Error' };
+  }
+};
+
+export const updateBook = async (ctx: Context) => {
+  try {
+    const { id } = getBookIdSchema.parse(ctx.params);
+    const bookData = createBookSchema.partial().parse(ctx.request.body);
+
+    const book = await bookService.updateBook(id, bookData);
+    ctx.body = { success: true, data: book };
+
+  } catch (error: any) {
+    console.error("updateBook Error:", error);
+
+    if (error instanceof z.ZodError) {
+      ctx.status = 400;
+      const errorMessages = (error as any).errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
+      ctx.body = { success: false, error: "Validation Failed", details: errorMessages };
+      return;
+    }
+
+    if (error.code === 'P2025') { // Record not found
+      ctx.status = 404;
+      ctx.body = { success: false, error: 'Book not found' };
+      return;
+    }
+
+    if (error.code === 'P2002') { // Unique constraint
+      ctx.status = 409;
+      ctx.body = { success: false, error: 'Conflict: ISBN already exists' };
+      return;
+    }
+
+    ctx.status = 500;
+    ctx.body = { success: false, error: 'Failed to update book' };
+  }
+};
+
+export const deleteBook = async (ctx: Context) => {
+  try {
+    const { id } = getBookIdSchema.parse(ctx.params);
+    await bookService.deleteBook(id);
+    ctx.status = 204; // No Content
+  } catch (error: any) {
+    console.error("deleteBook Error:", error);
+    if (error instanceof z.ZodError) {
+        ctx.status = 400;
+        ctx.body = { success: false, error: "Invalid ID" };
+        return;
+    }
+    if (error.code === 'P2025') {
+       ctx.status = 404;
+       ctx.body = { success: false, error: 'Book not found' };
+       return;
+    }
+    if (error.code === 'P2003') { // Foreign key constraint (e.g. has copies or loans)
+        ctx.status = 409;
+        ctx.body = { success: false, error: 'Cannot delete book with existing copies or history' };
+        return;
+    }
+    ctx.status = 500;
+    ctx.body = { success: false, error: 'Failed to delete book' };
   }
 };

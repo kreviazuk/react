@@ -86,3 +86,17 @@ docker-compose up -d
    - Username: `user`
    - Password: `password`
 5. 点击 "Save".
+
+## 🛠️ 数据可视化 (Data Visualization)
+
+### 1. pgAdmin (Postgres 管理后台)
+
+- **地址**: [http://localhost:5050](http://localhost:5050)
+- **账号/密码**: `admin@example.com` / `admin`
+- **功能**: 专业的数据库管理工具。
+
+### 2. Prisma Studio (推荐)
+
+- **启动命令**: `cd backend && npx prisma studio`
+- **地址**: [http://localhost:5555](http://localhost:5555)
+- **功能**: 更现代、直观的数据查看和编辑界面。

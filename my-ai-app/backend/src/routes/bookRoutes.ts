@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { getBooks, getBook, createBook } from '../controllers/bookController';
+import { getBooks, getBook, createBook, updateBook, deleteBook } from '../controllers/bookController';
 
 const router = new Router({ prefix: '/books' });
 
@@ -57,6 +57,10 @@ const router = new Router({ prefix: '/books' });
  *                 type: string
  *               isbn:
  *                 type: string
+ *               coverImage:
+ *                 type: string
+ *               description:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Book created
@@ -81,7 +85,53 @@ router.post('/', createBook);
  *         description: Book details
  *       404:
  *         description: Book not found
+ *   put:
+ *     summary: Update a book
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               author:
+ *                 type: string
+ *               isbn:
+ *                 type: string
+ *               coverImage:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Book updated
+ *       404:
+ *         description: Book not found
+ *   delete:
+ *     summary: Delete a book
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: Book deleted
+ *       404:
+ *         description: Book not found
  */
 router.get('/:id', getBook);
+router.put('/:id', updateBook);
+router.delete('/:id', deleteBook);
 
 export default router;

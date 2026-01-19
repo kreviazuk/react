@@ -20,3 +20,16 @@ export const createBook = async (data: Prisma.BookCreateInput) => {
     data
   });
 };
+
+export const updateBook = async (id: number, data: Prisma.BookUpdateInput) => {
+  return await prisma.book.update({
+    where: { id },
+    data
+  });
+};
+
+export const deleteBook = async (id: number) => {
+  return await prisma.book.delete({
+    where: { id }
+  });
+};

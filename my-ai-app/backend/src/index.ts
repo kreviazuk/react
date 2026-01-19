@@ -2,6 +2,9 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import dotenv from 'dotenv';
+import serve from 'koa-static';
+import mount from 'koa-mount';
+import path from 'path';
 
 import { koaSwagger } from 'koa2-swagger-ui';
 import { swaggerSpec } from './config/swagger';
@@ -16,6 +19,9 @@ app.use(koaSwagger({
     routePrefix: '/docs', 
     swaggerOptions: { spec: swaggerSpec as Record<string, unknown> },
 }));
+
+// Serve uploaded files statically at /uploads
+app.use(mount('/uploads', serve(path.join(process.cwd(), 'uploads'))));
 
 // Middleware
 app.use(cors({
