@@ -7,18 +7,51 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const bookSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  author: z.string().min(1, "Author is required"),
+  isbn: z.string().length(13, "ISBN must be exactly 13 characters"),
+});
+
+type BookFormValues = z.infer<typeof bookSchema>;
 
 export default function BooksPage() {
   const { data: books, isLoading } = useBooks();
   const createBookMutation = useCreateBook();
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: "", author: "", isbn: "" });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createBookMutation.mutateAsync(formData);
-    setOpen(false);
-    setFormData({ title: "", author: "", isbn: "" });
+  // Initialize React Hook Form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<BookFormValues>({
+    resolver: zodResolver(bookSchema),
+    defaultValues: {
+      title: "",
+      author: "",
+      isbn: "",
+    },
+  });
+
+  const onSubmit = async (data: BookFormValues) => {
+    try {
+      await createBookMutation.mutateAsync(data);
+      setOpen(false);
+      reset(); // Reset form after success
+    } catch (error) {
+      console.error("Failed to create book", error);
+    }
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) reset(); // Reset form when dialog closes
   };
 
   if (isLoading) return <div className="p-8">Loading...</div>;
@@ -28,7 +61,7 @@ export default function BooksPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">图书管理 (Library Admin)</h1>
         
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button>+ 录入新书 (Add Book)</Button>
           </DialogTrigger>
@@ -36,33 +69,30 @@ export default function BooksPage() {
             <DialogHeader>
               <DialogTitle>录入新书</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="title">书名</Label>
                 <Input 
                   id="title" 
-                  value={formData.title} 
-                  onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                  required 
+                  {...register("title")} 
                 />
+                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
               </div>
               <div>
                 <Label htmlFor="author">作者</Label>
                 <Input 
                   id="author" 
-                  value={formData.author} 
-                  onChange={(e) => setFormData({...formData, author: e.target.value})} 
-                  required 
+                  {...register("author")} 
                 />
+                {errors.author && <p className="text-red-500 text-sm mt-1">{errors.author.message}</p>}
               </div>
               <div>
                 <Label htmlFor="isbn">ISBN</Label>
                 <Input 
                   id="isbn" 
-                  value={formData.isbn} 
-                  onChange={(e) => setFormData({...formData, isbn: e.target.value})} 
-                  required 
+                  {...register("isbn")} 
                 />
+                {errors.isbn && <p className="text-red-500 text-sm mt-1">{errors.isbn.message}</p>}
               </div>
               <Button type="submit" disabled={createBookMutation.isPending}>
                 {createBookMutation.isPending ? "Submitting..." : "Submit"}

@@ -29,8 +29,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // You can handle 401 (Unauthorized) here by redirecting to login
-    // if (error.response?.status === 401) { ... }
+    // Handle 401 Unauthorized errors
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        // Optional: Redirect to login page
+        // window.location.href = '/login'; 
+        // Or if you are using Next.js router, you might handle this differently in components,
+        // but for a global axios interceptor, window.location is the safest bet to force a hard redirect.
+        window.location.href = '/login';
+      }
+    }
     
     // Return a streamlined error message
     const message = error.response?.data?.message || error.message || 'Something went wrong';
