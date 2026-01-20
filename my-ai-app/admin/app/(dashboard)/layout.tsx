@@ -4,9 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
-import { Book, LayoutDashboard, LogOut } from "lucide-react";
+import { Book, LayoutDashboard, LogOut, ClipboardCheck, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
+// 菜单项类型定义
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  roles: ('USER' | 'ADMIN')[]; // 允许访问的角色
+}
 
 export default function DashboardLayout({
   children,
@@ -29,10 +37,17 @@ export default function DashboardLayout({
 
   if (!isAuthenticated()) return null;
 
-  const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Books", href: "/books", icon: Book },
+  // 菜单配置（带角色权限）
+  const navItems: NavItem[] = [
+    { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["USER", "ADMIN"] },
+    { name: "Books", href: "/books", icon: Book, roles: ["USER", "ADMIN"] },
+    { name: "借阅审核", href: "/loans/review", icon: ClipboardCheck, roles: ["ADMIN"] },
   ];
+
+  // 根据用户角色过滤菜单
+  const visibleNavItems = navItems.filter(item => 
+    user?.role && item.roles.includes(user.role)
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -43,7 +58,7 @@ export default function DashboardLayout({
         </div>
         
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
@@ -68,6 +83,17 @@ export default function DashboardLayout({
              <div className="text-sm">
                 <p className="font-medium text-gray-900">{user?.name}</p>
                 <p className="text-gray-500 text-xs">{user?.email}</p>
+                {/* 角色标签 */}
+                <p className="mt-1">
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-medium",
+                    user?.role === 'ADMIN' 
+                      ? "bg-purple-100 text-purple-700" 
+                      : "bg-gray-100 text-gray-600"
+                  )}>
+                    {user?.role === 'ADMIN' ? '管理员' : '普通用户'}
+                  </span>
+                </p>
              </div>
           </div>
           <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={logout}>

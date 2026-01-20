@@ -3,6 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/api/client";
 
+export type BookCopy = {
+  id: number;
+  barcode: string;
+  status: 'AVAILABLE' | 'BORROWED' | 'LOST' | 'RESERVED' | 'MAINTENANCE';
+  location: string;
+};
+
 export type Book = {
   id: number;
   title: string;
@@ -10,7 +17,8 @@ export type Book = {
   isbn: string;
   coverImage?: string;
   description?: string;
-  category?: { name: string };
+  copies: BookCopy[];
+  category?: { id: number; name: string };
 };
 
 export function useBooks() {

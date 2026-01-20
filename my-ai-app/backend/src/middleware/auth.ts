@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 export interface AuthState {
   user: {
     userId: number;
+    role: string;
   };
 }
 
@@ -27,7 +28,7 @@ export const authMiddleware = async (ctx: Context, next: Next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
     ctx.state.user = decoded; // Mount user info to context state
     await next();
   } catch (err) {

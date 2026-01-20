@@ -3,8 +3,8 @@ import authRoutes from './auth';
 import userRoutes from './user';
 import bookRoutes from './bookRoutes';
 import uploadRoutes from './upload';
-
 import categoryRoutes from './categoryRoutes';
+import loanRoutes from './loanRoutes';
 
 const router = new Router({ prefix: '/api' });
 
@@ -15,5 +15,6 @@ router.use(userRoutes.routes(), userRoutes.allowedMethods());
 router.use(bookRoutes.routes(), bookRoutes.allowedMethods());
 router.use(uploadRoutes.routes(), uploadRoutes.allowedMethods());
 router.use(categoryRoutes.routes(), categoryRoutes.allowedMethods());
+router.use(loanRoutes.routes(), loanRoutes.allowedMethods());
 
 export default router;

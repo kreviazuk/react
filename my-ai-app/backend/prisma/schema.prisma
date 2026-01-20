@@ -25,6 +25,15 @@ enum BookStatus {
   MAINTENANCE // 维修中
 }
 
+// 借阅状态枚举
+enum LoanStatus {
+  PENDING   // 待审核
+  APPROVED  // 已批准（借阅中）
+  REJECTED  // 已拒绝
+  RETURNED  // 已归还
+  OVERDUE   // 逾期
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -88,18 +97,22 @@ model BookCopy {
 
 // 借阅记录
 model Loan {
-  id         Int       @id @default(autoincrement())
-  userId     Int
-  copyId     Int
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  copyId       Int
   
-  borrowDate DateTime  @default(now()) // 借出时间
-  dueDate    DateTime  // 应还时间
-  returnDate DateTime? // 实际归还时间
+  borrowDate   DateTime   @default(now())  // 申请时间
+  dueDate      DateTime?  // 应还时间（批准后设置）
+  returnDate   DateTime?  // 实际归还时间
   
-  status     String    @default("ONGOING") // ONGOING (进行中), RETURNED (已还), OVERDUE (逾期)
-
-  user       User      @relation(fields: [userId], references: [id])
-  copy       BookCopy  @relation(fields: [copyId], references: [id])
+  status       LoanStatus @default(PENDING)
+  rejectReason String?    // 拒绝理由
+  
+  user         User       @relation(fields: [userId], references: [id])
+  copy         BookCopy   @relation(fields: [copyId], references: [id])
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 // 预约记录
