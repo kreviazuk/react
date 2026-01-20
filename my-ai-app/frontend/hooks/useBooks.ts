@@ -10,6 +10,7 @@ export type Book = {
   isbn: string;
   coverImage?: string;
   description?: string;
+  category?: { name: string };
 };
 
 export function useBooks() {

@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from "@/hooks/useBooks";
+import { useBooks, useCreateBook, useUpdateBook, useDeleteBook, useCategories } from "@/hooks/useBooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import api from "@/lib/api";
@@ -20,12 +21,14 @@ const bookSchema = z.object({
   isbn: z.string().length(13, "ISBN must be exactly 13 characters"),
   coverImage: z.string().optional(),
   description: z.string().optional(),
+  categoryId: z.coerce.number().optional(),
 });
 
 type BookFormValues = z.infer<typeof bookSchema>;
 
 export default function BooksPage() {
   const { data: books, isLoading } = useBooks();
+  const { data: categories } = useCategories();
   const createBookMutation = useCreateBook();
   const updateBookMutation = useUpdateBook();
   const deleteBookMutation = useDeleteBook();
@@ -40,6 +43,7 @@ export default function BooksPage() {
   const {
     register,
     handleSubmit,
+    control,
     reset,
     setValue,
     watch,
@@ -52,6 +56,7 @@ export default function BooksPage() {
       isbn: "",
       coverImage: "",
       description: "",
+      categoryId: undefined,
     },
   });
 
@@ -101,6 +106,7 @@ export default function BooksPage() {
     setValue("isbn", book.isbn);
     setValue("coverImage", book.coverImage || "");
     setValue("description", book.description || "");
+    setValue("categoryId", book.categoryId);
     setOpen(true);
   };
 
@@ -154,10 +160,36 @@ export default function BooksPage() {
                   </div>
               </div>
 
-              <div>
-                <Label htmlFor="isbn">ISBN</Label>
-                <Input id="isbn" {...register("isbn")} />
-                {errors.isbn && <p className="text-red-500 text-sm mt-1">{errors.isbn.message}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="isbn">ISBN</Label>
+                  <Input id="isbn" {...register("isbn")} />
+                  {errors.isbn && <p className="text-red-500 text-sm mt-1">{errors.isbn.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="category">分类 (Category)</Label>
+                  <Controller
+                    control={control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <Select 
+                        onValueChange={(value) => field.onChange(Number(value))} 
+                        value={field.value ? String(field.value) : undefined}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择分类..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories?.map((cat) => (
+                            <SelectItem key={cat.id} value={String(cat.id)}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
               </div>
 
               <div>

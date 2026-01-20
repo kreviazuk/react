@@ -105,6 +105,13 @@ export function NewArrivals() {
                                      <span className="text-blue-900/50 text-xs font-serif italic">{book.title}</span>
                                 </div>
                              )}
+                             
+                             {/* Category Badge */}
+                             {book.category && (
+                                <div className="absolute top-1 right-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                    {book.category.name}
+                                </div>
+                             )}
                         </div>
                         <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{book.title}</h4>
                         <p className="text-gray-500 text-xs truncate">{book.author}</p>
@@ -171,7 +178,11 @@ export function RecommendedList() {
                                     <Star size={8} fill="currentColor" /> 4.5
                                  </span>
                              </div>
-                             <p className="text-gray-500 text-xs mb-3">{book.author}</p>
+                             <p className="text-gray-500 text-xs mb-3">
+                                {book.author} 
+                                {book.category && <span className="text-gray-300 mx-1">•</span>}
+                                {book.category && <span className="text-emerald-600 font-medium">{book.category.name}</span>}
+                             </p>
                              
                              <div className="flex justify-between items-center">
                                  <span className="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded">Available</span>

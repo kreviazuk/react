@@ -24,10 +24,20 @@ export function useBooks() {
   });
 }
 
+export function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await api.get("/categories");
+      return data.data as { id: number; name: string }[];
+    },
+  });
+}
+
 export function useCreateBook() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (newBook: { title: string; author: string; isbn: string; coverImage?: string; description?: string }) => {
+    mutationFn: async (newBook: { title: string; author: string; isbn: string; coverImage?: string; description?: string; categoryId?: number }) => {
       await api.post("/books", newBook);
     },
     onSuccess: () => {
