@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import api from "@/lib/api";
-import { Upload, Image as ImageIcon, Loader2, Trash2, AlertCircle } from "lucide-react";
+import { Upload, Image as ImageIcon, Loader2, Trash2, AlertCircle, X } from "lucide-react";
 
 const bookSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -34,6 +34,7 @@ export default function BooksPage() {
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [bookToDelete, setBookToDelete] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Initialize React Hook Form
   const {
@@ -240,7 +241,10 @@ export default function BooksPage() {
                 <TableCell>{book.id}</TableCell>
                 <TableCell>
                   {book.coverImage ? (
-                    <div className="w-10 h-14 relative border rounded overflow-hidden">
+                    <div 
+                      className="w-10 h-14 relative border rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary hover:scale-105 transition-all"
+                      onClick={() => setPreviewImage(book.coverImage || "")}
+                    >
                       <img src={book.coverImage} alt={book.title} className="object-cover w-full h-full" />
                     </div>
                   ) : (
@@ -294,6 +298,30 @@ export default function BooksPage() {
               {deleteBookMutation.isPending ? "Deleting..." : "确认删除"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="sm:max-w-3xl p-0 overflow-hidden bg-transparent border-none shadow-none text-center">
+            <div className="relative w-full h-[80vh] flex items-center justify-center pointer-events-none">
+                {/* Image Container with pointer-events-auto to allow right-click save */}
+                <div className="relative pointer-events-auto"> 
+                  {previewImage && (
+                    <img 
+                      src={previewImage} 
+                      alt="Preview" 
+                      className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" 
+                    />
+                  )}
+                  <button 
+                    onClick={() => setPreviewImage(null)}
+                    className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors backdrop-blur-sm z-50"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+            </div>
         </DialogContent>
       </Dialog>
     </div>
