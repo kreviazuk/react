@@ -1,6 +1,6 @@
 import Router from '@koa/router';
-import prisma from '../lib/prisma';
-import { authMiddleware, AuthState } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
+import * as userController from '../controllers/userController';
 
 const router = new Router();
 
@@ -32,32 +32,6 @@ router.use(authMiddleware);
  *       401:
  *         description: Unauthorized
  */
-router.get('/me', async (ctx) => {
-  const { userId } = (ctx.state as AuthState).user;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
-
-    if (!user) {
-        ctx.status = 404;
-        ctx.body = { message: '用户不存在' };
-        return;
-    }
-
-    ctx.body = user;
-  } catch (error) {
-    console.error(error);
-    ctx.status = 500;
-    ctx.body = { message: '服务器内部错误' };
-  }
-});
+router.get('/me', userController.getProfile);
 
 export default router;
