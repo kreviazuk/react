@@ -93,6 +93,17 @@ export default function MyBooksPage() {
     // History Tab: Returned, Rejected
     const historyLoans = loans?.filter(l => ['RETURNED', 'REJECTED'].includes(l.status));
 
+    const getBookStatus = (bookId: number, isAvailable: boolean) => {
+        const loan = requestLoans?.find(l => l.copy.bookId === bookId);
+        if (loan) {
+            if (loan.status === 'PENDING') return { label: 'Request Sent', color: 'text-orange-600', dot: 'bg-orange-500' };
+            if (loan.status === 'APPROVED') return { label: 'Borrowed', color: 'text-blue-600', dot: 'bg-blue-500' };
+            if (loan.status === 'OVERDUE') return { label: 'Overdue', color: 'text-red-600', dot: 'bg-red-500' };
+        }
+        if (isAvailable) return { label: 'Available now', color: 'text-emerald-700', dot: 'bg-emerald-500' };
+        return { label: 'Unavailable', color: 'text-gray-500', dot: 'bg-gray-400' };
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
@@ -147,7 +158,9 @@ export default function MyBooksPage() {
                             </div>
                         </div>
 
-                        {favorites?.map((book) => (
+                        {favorites?.map((book) => {
+                             const status = getBookStatus(book.id, book.isAvailable ?? true);
+                             return (
                              <div 
                                 key={book.id} 
                                 className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex gap-4 relative overflow-hidden active:scale-[0.99] transition-transform"
@@ -172,14 +185,14 @@ export default function MyBooksPage() {
                                         <p className="text-gray-500 text-sm mt-1">{book.author}</p>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <div className={cn("w-2 h-2 rounded-full", (book.isAvailable ?? true) ? "bg-emerald-500" : "bg-gray-400")}></div>
-                                        <span className={cn("text-xs font-medium", (book.isAvailable ?? true) ? "text-emerald-700" : "text-gray-500")}>
-                                            {(book.isAvailable ?? true) ? "Available now" : "Unavailable"}
+                                        <div className={cn("w-2 h-2 rounded-full", status.dot)}></div>
+                                        <span className={cn("text-xs font-medium", status.color)}>
+                                            {status.label}
                                         </span>
                                     </div>
                                 </div>
                              </div>
-                        ))}
+                        )})}
 
                         {(!favorites || favorites.length === 0) && (
                             <div className="text-center py-12 text-gray-400 border border-dashed rounded-xl border-gray-200">
