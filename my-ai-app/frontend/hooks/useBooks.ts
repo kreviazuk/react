@@ -17,6 +17,8 @@ export type Book = {
   isbn: string;
   coverImage?: string;
   description?: string;
+  publisher?: string;
+  publishDate?: string;
   isAvailable?: boolean;
   isBorrowed?: boolean;
   copies: BookCopy[];

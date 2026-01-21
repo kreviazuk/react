@@ -1,13 +1,13 @@
 "use client";
 
-import { useBook } from "@/hooks/useBooks";
+import { useBook, Book } from "@/hooks/useBooks";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Star, Heart, CheckCircle2, Clock, AlertCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { loansApi } from "@/api/loans";
+import { favoritesApi } from "@/api/favorites";
 import { toast } from "sonner";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export default function BookDetailPage() {
@@ -15,9 +15,10 @@ export default function BookDetailPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { data: book, isLoading, error } = useBook(id);
-    const [isFavorite, setIsFavorite] = useState(false); // 模拟收藏状态
+    
+    // --- Data Fetching ---
 
-    // 获取我的借阅记录，判断当前状态
+    // 1. My Loans (to check status)
     const { data: myLoans } = useQuery({
         queryKey: ["my-loans"],
         queryFn: async () => {
@@ -26,20 +27,32 @@ export default function BookDetailPage() {
         },
     });
 
-    // 计算当前书的借阅状态
+    // 2. Favorites (to check status)
+    const { data: favorites, refetch: refetchFavorites } = useQuery({
+        queryKey: ["favorites"],
+        queryFn: async () => {
+             const res = await favoritesApi.getFavorites();
+             return res.data.data as Book[];
+        }
+    });
+
+    // --- Computed State ---
+
     const currentLoan = myLoans?.find(
-        (loan) => loan.copy.bookId === Number(id) && 
+        (loan: any) => loan.copy.bookId === Number(id) && 
         ['PENDING', 'APPROVED', 'OVERDUE'].includes(loan.status)
     );
 
     const availableCopies = book?.copies?.filter(c => c.status === 'AVAILABLE') || [];
     const hasAvailableCopies = availableCopies.length > 0;
+    
+    const isFavorite = favorites?.some((b: any) => b.id === Number(id));
 
-    // 申请借阅 Mutation
+    // --- Mutations ---
+
     const applyMutation = useMutation({
         mutationFn: async () => {
             if (!hasAvailableCopies) throw new Error("No copies available");
-            // 默认申请第一本可用的
             const copyId = availableCopies[0].id;
             return loansApi.apply(copyId);
         },
@@ -48,26 +61,41 @@ export default function BookDetailPage() {
                 description: "Ready for pickup at Central Library once approved.",
             });
             queryClient.invalidateQueries({ queryKey: ["my-loans"] });
-            queryClient.invalidateQueries({ queryKey: ["book", id] }); // 刷新库存
+            queryClient.invalidateQueries({ queryKey: ["book", id] });
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message || "Failed to request book");
         },
     });
 
+    const favoriteMutation = useMutation({
+        mutationFn: async () => {
+            return favoritesApi.toggleFavorite(Number(id));
+        },
+        onSuccess: () => {
+            refetchFavorites();
+            toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+        },
+        onError: () => {
+            toast.error("Failed to update favorites");
+        }
+    });
+
+    // --- Handlers ---
+
     const handleBorrow = () => {
         applyMutation.mutate();
     };
 
     const toggleFavorite = () => {
-        setIsFavorite(!isFavorite);
-        toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+        favoriteMutation.mutate();
     };
+
 
     if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
     if (error || !book) return <div className="p-8 text-center text-gray-500">Book not found</div>;
 
-    // 状态显示逻辑
+    // --- Status Button Logic ---
     let statusButton;
     if (currentLoan) {
         if (currentLoan.status === 'PENDING') {
@@ -100,7 +128,6 @@ export default function BookDetailPage() {
             </Button>
         );
     } else if (book?.isBorrowed) {
-        // Manually marked as Borrowed (overrides stock)
          statusButton = (
             <Button className="w-full rounded-xl bg-orange-100 text-orange-700 font-bold h-12 shadow-none text-base border border-orange-200 cursor-not-allowed" disabled>
                 <Clock className="mr-2 h-5 w-5" />
@@ -208,7 +235,6 @@ export default function BookDetailPage() {
                     </div>
 
                     <div className="space-y-3"> 
-                        {/* 暂时 mock 位置信息，如果后端有 location 字段则使用 */}
                         {book.copies && book.copies.length > 0 ? (
                             book.copies.map(copy => (
                                 <div key={copy.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-white shadow-sm">
@@ -251,6 +277,7 @@ export default function BookDetailPage() {
             <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-100 flex items-center gap-3 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                 <button 
                     onClick={toggleFavorite}
+                     disabled={favoriteMutation.isPending}
                     className={cn(
                         "w-14 h-12 flex items-center justify-center rounded-xl border transition-colors",
                         isFavorite 
