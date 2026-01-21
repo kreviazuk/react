@@ -15,6 +15,9 @@ const createBookSchema = z.object({
   publishDate: z.coerce.date().optional(),
   coverImage: z.string().optional(),
   categoryId: z.number().int().optional(),
+  isAvailable: z.boolean().optional(),
+  isBorrowed: z.boolean().optional(),
+  inventoryCount: z.coerce.number().int().nonnegative().optional(),
 });
 
 // 用于验证路径参数中的 ID

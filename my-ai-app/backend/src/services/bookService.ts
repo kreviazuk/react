@@ -57,16 +57,16 @@ export const getBookById = async (id: number) => {
 export const createBook = async (data: any) => {
   // We assume data is flat (has categoryId, not category connect object)
   // because that's what the controller sends.
-  const { title, author, isbn, coverImage, description, publisher, publishDate, categoryId } = data;
+  const { title, author, isbn, coverImage, description, publisher, publishDate, categoryId, isAvailable, isBorrowed } = data;
 
   const result: any[] = await prisma.$queryRaw`
     INSERT INTO "Book" (
       "title", "author", "isbn", "coverImage", "description", 
-      "publisher", "publishDate", "categoryId", "updatedAt"
+      "publisher", "publishDate", "categoryId", "isAvailable", "isBorrowed", "updatedAt"
     )
     VALUES (
       ${title}, ${author}, ${isbn}, ${coverImage}, ${description}, 
-      ${publisher}, ${publishDate}, ${categoryId}, NOW()
+      ${publisher}, ${publishDate}, ${categoryId}, ${isAvailable ?? true}, ${isBorrowed ?? false}, NOW()
     )
     RETURNING *
   `;
@@ -74,9 +74,57 @@ export const createBook = async (data: any) => {
 };
 
 export const updateBook = async (id: number, data: any) => {
+  // Handle Inventory Count Update
+  if (typeof data.inventoryCount === 'number') {
+    const targetCount = data.inventoryCount;
+    
+    // Get current copies
+    const currentCopies: any[] = await prisma.$queryRaw`
+      SELECT * FROM "BookCopy" WHERE "bookId" = ${id} ORDER BY id ASC
+    `;
+    const currentCount = currentCopies.length;
+    const diff = targetCount - currentCount;
+
+    if (diff > 0) {
+      // Add copies
+      // We need the book ISBN for barcode generation
+      const book: any[] = await prisma.$queryRaw`SELECT isbn FROM "Book" WHERE id = ${id}`;
+      const isbn = book[0]?.isbn || 'UNKNOWN';
+
+      for (let i = 0; i < diff; i++) {
+         const barcode = `${isbn}-${Date.now()}-${i}`;
+         await prisma.$queryRaw`
+           INSERT INTO "BookCopy" ("barcode", "status", "bookId", "updatedAt")
+           VALUES (${barcode}, 'AVAILABLE', ${id}, NOW())
+         `;
+      }
+    } else if (diff < 0) {
+      // Remove copies
+      // Only remove AVAILABLE copies
+      const toRemoveCount = Math.abs(diff);
+      const availableCopies = currentCopies.filter((c: any) => c.status === 'AVAILABLE');
+      
+      if (availableCopies.length < toRemoveCount) {
+        throw new Error(`Cannot reduce inventory to ${targetCount}. Only ${availableCopies.length} copies are available to remove, but need to remove ${toRemoveCount}. Others are borrowed or in use.`);
+      }
+
+      const idsToRemove = availableCopies.slice(0, toRemoveCount).map((c: any) => c.id);
+      
+      if (idsToRemove.length > 0) {
+          // Prisma Raw SQL with IN clause is tricky, usually need creating a string or looping
+          // simplest here is looping or using executeRawUnsafe with manual string join
+          const idString = idsToRemove.join(',');
+           await prisma.$executeRawUnsafe(`
+            DELETE FROM "BookCopy" WHERE id IN (${idString})
+          `);
+      }
+    }
+    // Continue to update other fields...
+  }
+
   // Construct dynamic SET clause
   // const updates: string[] = [];
-  const validColumns = ['title', 'author', 'isbn', 'coverImage', 'description', 'publisher', 'publishDate', 'categoryId'];
+  const validColumns = ['title', 'author', 'isbn', 'coverImage', 'description', 'publisher', 'publishDate', 'categoryId', 'isAvailable', 'isBorrowed'];
   
   // We need to verify if data has these keys.
   // Note: Parameter binding with dynamic columns is tricky in Prisma Raw.
@@ -113,7 +161,11 @@ export const updateBook = async (id: number, data: any) => {
   // Always update updatedAt
   setClauses.push(`"updatedAt" = NOW()`);
 
-  if (setClauses.length === 0) return getBookById(id);
+  // If no other fields to update, return the book (after potential inventory update)
+  if (setClauses.length === 1 && !data.updatedAt) { // Only updatedAt was added
+     // If we updated inventory, we still want to return the updated book
+     return getBookById(id);
+  }
 
   const query = `
     UPDATE "Book" 

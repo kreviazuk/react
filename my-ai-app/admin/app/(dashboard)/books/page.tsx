@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import api from "@/lib/api";
 import { Upload, Image as ImageIcon, Loader2, Trash2, AlertCircle, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch"; 
 
 const bookSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -22,6 +23,9 @@ const bookSchema = z.object({
   coverImage: z.string().optional(),
   description: z.string().optional(),
   categoryId: z.coerce.number().optional(),
+  isAvailable: z.boolean().default(true),
+  isBorrowed: z.boolean().default(false),
+  inventoryCount: z.coerce.number().int().nonnegative().optional(),
 });
 
 type BookFormValues = z.infer<typeof bookSchema>;
@@ -57,6 +61,9 @@ export default function BooksPage() {
       coverImage: "",
       description: "",
       categoryId: undefined,
+      isAvailable: true,
+      isBorrowed: false,
+      inventoryCount: 0,
     },
   });
 
@@ -107,6 +114,9 @@ export default function BooksPage() {
     setValue("coverImage", book.coverImage || "");
     setValue("description", book.description || "");
     setValue("categoryId", book.categoryId);
+    setValue("isAvailable", book.isAvailable ?? true);
+    setValue("isBorrowed", book.isBorrowed ?? false);
+    setValue("inventoryCount", book.copies?.length || 0); // Set current inventory
     setOpen(true);
   };
 
@@ -167,6 +177,21 @@ export default function BooksPage() {
                   {errors.isbn && <p className="text-red-500 text-sm mt-1">{errors.isbn.message}</p>}
                 </div>
                 <div>
+                  <Label htmlFor="inventoryCount">库存数量 (Inventory)</Label>
+                  <Input 
+                    id="inventoryCount" 
+                    type="number"
+                    min={0}
+                    {...register("inventoryCount")} 
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">自动增加/减少库存</p>
+                  {errors.inventoryCount && <p className="text-red-500 text-sm mt-1">{errors.inventoryCount.message}</p>}
+                </div>
+              </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
                   <Label htmlFor="category">分类 (Category)</Label>
                   <Controller
                     control={control}
@@ -190,7 +215,47 @@ export default function BooksPage() {
                     )}
                   />
                 </div>
-              </div>
+               </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                 <Controller
+                    control={control}
+                    name="isAvailable"
+                    render={({ field }) => (
+                        <div className="flex flex-col gap-2 rounded-lg border p-3 bg-gray-50 h-full justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-sm font-medium">开放借阅</Label>
+                                <div className="text-xs text-gray-500">
+                                    关闭后全体不可见
+                                </div>
+                            </div>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </div>
+                    )}
+                />
+                 <Controller
+                    control={control}
+                    name="isBorrowed"
+                    render={({ field }) => (
+                        <div className="flex flex-col gap-2 rounded-lg border p-3 bg-orange-50 h-full justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-sm font-medium text-orange-900">标记已借出</Label>
+                                <div className="text-xs text-orange-700">
+                                    显示为 "On Loan"
+                                </div>
+                            </div>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                className="data-[state=checked]:bg-orange-500"
+                            />
+                        </div>
+                    )}
+                />
+               </div>
 
               <div>
                 <Label htmlFor="description">简介 (Description)</Label>
@@ -263,6 +328,7 @@ export default function BooksPage() {
               <TableHead>书名 (Title)</TableHead>
               <TableHead>作者 (Author)</TableHead>
               <TableHead>ISBN</TableHead>
+              <TableHead>状态 (Status)</TableHead>
               <TableHead>库存 (Copies)</TableHead>
               <TableHead>操作 (Actions)</TableHead>
             </TableRow>
@@ -288,6 +354,22 @@ export default function BooksPage() {
                 <TableCell className="font-medium">{book.title}</TableCell>
                 <TableCell>{book.author}</TableCell>
                 <TableCell>{book.isbn}</TableCell>
+                <TableCell>
+                    {/* Status Logic */}
+                    {book.isAvailable === false ? (
+                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            不可借阅
+                         </span>
+                    ) : book.isBorrowed ? (
+                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                            已借出
+                         </span>
+                    ) : (
+                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            可借阅
+                         </span>
+                    )}
+                </TableCell>
                 <TableCell>{book.copies?.length || 0}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">

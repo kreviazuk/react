@@ -31,21 +31,38 @@ export default function BookListPage() {
     });
 
     const getStatus = (book: Book) => {
+        // 1. Manually set to Unavailable
+        if (book.isAvailable === false) {
+             return { type: 'UNAVAILABLE', label: 'UNAVAILABLE', color: 'bg-gray-100 text-gray-400' };
+        }
+
+        // 2. Manually marked as Borrowed
+        if (book.isBorrowed) {
+             return { type: 'ON_LOAN', label: 'ON LOAN', sub: 'Manual Hold', color: 'bg-orange-50 text-orange-600' };
+        }
+
+        const totalCopies = book.copies.length;
         const availableCount = book.copies.filter(c => c.status === 'AVAILABLE').length;
+
+        // 3. Has available copies
         if (availableCount > 0) {
-            return { type: 'AVAILABLE', label: 'AVAILABLE' };
+            return { type: 'AVAILABLE', label: 'AVAILABLE', color: 'status-available' };
         }
         
-        // 简化逻辑：如果没库存，假设借出了
-        // 实际如果要显示 "Back in 3 days"，需要后端聚合 Loan 数据，这个暂时 mockup
-        return { type: 'ON_LOAN', label: 'ON LOAN', sub: 'Back in 3 days' };
+        // 4. No copies exist at all
+        if (totalCopies === 0) {
+             return { type: 'NO_STOCK', label: 'OUT OF STOCK', sub: 'Coming Soon', color: 'bg-slate-100 text-slate-500' };
+        }
+        
+        // 5. Copies exist but all are borrowed/maintenance
+        return { type: 'ON_LOAN', label: 'ON LOAN', sub: 'Waitlist Available', color: 'bg-orange-50 text-orange-600' };
     };
 
     if (isLoading) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-            {/* Header / Search */}
+            {/* ... (Header/Search unchanged) ... */}
             <div className="sticky top-0 z-10 bg-gray-50 pt-4 pb-2 px-4 space-y-4">
                 <div className="flex gap-3">
                     <div className="relative flex-1">
@@ -117,17 +134,21 @@ export default function BookListPage() {
                                     </div>
 
                                     <div className="text-right">
-                                        {status.type === 'ON_LOAN' ? (
-                                            <div className="bg-gray-100 px-3 py-1 rounded-full inline-block">
-                                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">On Loan</span>
-                                                 {/* <div className="text-[10px] text-gray-400 font-medium">Back in 3 days</div> */}
+                                        {status.type === 'AVAILABLE' ? (
+                                             <div className="flex items-center gap-1.5 status-available px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">
+                                                    Available ({book.copies.filter(c => c.status === 'AVAILABLE').length})
+                                                </span>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-1.5 status-available">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Available</span>
+                                            <div className={cn("px-3 py-1 rounded-full inline-block", status.color || "bg-gray-100")}>
+                                                 <span className={cn("text-[10px] font-bold uppercase tracking-wide", status.type === 'UNAVAILABLE' ? "text-gray-400" : "text-inherit")}>
+                                                     {status.label}
+                                                 </span>
                                             </div>
                                         )}
+                                        
                                         {status.sub && (
                                             <p className="text-[10px] text-gray-400 mt-1">{status.sub}</p>
                                         )}

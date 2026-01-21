@@ -92,6 +92,21 @@ export default function BookDetailPage() {
                 </Button>
             );
         }
+    } else if (book?.isAvailable === false) {
+         statusButton = (
+            <Button className="w-full rounded-xl bg-gray-100 text-gray-400 font-bold h-12 shadow-none text-base border border-gray-200 cursor-not-allowed" disabled>
+                <AlertCircle className="mr-2 h-5 w-5" />
+                Not Available for Loan
+            </Button>
+        );
+    } else if (book?.isBorrowed) {
+        // Manually marked as Borrowed (overrides stock)
+         statusButton = (
+            <Button className="w-full rounded-xl bg-orange-100 text-orange-700 font-bold h-12 shadow-none text-base border border-orange-200 cursor-not-allowed" disabled>
+                <Clock className="mr-2 h-5 w-5" />
+                On Loan (Manual Hold)
+            </Button>
+        );
     } else if (hasAvailableCopies) {
         statusButton = (
             <Button 
@@ -104,8 +119,8 @@ export default function BookDetailPage() {
         );
     } else {
          statusButton = (
-            <Button className="w-full rounded-xl bg-gray-400 font-bold h-12 shadow-none text-base cursor-not-allowed" disabled>
-                Unavailable
+            <Button className="w-full rounded-xl bg-orange-100 text-orange-700 font-bold h-12 shadow-none text-base hover:bg-orange-200">
+                Join Waitlist
             </Button>
         );
     }
