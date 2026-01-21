@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { getCategories } from '../controllers/categoryController';
+import * as categoryController from '../controllers/categoryController';
 
 const router = new Router({ prefix: '/categories' });
 
@@ -38,6 +38,6 @@ const router = new Router({ prefix: '/categories' });
  *                       desc:
  *                         type: string
  */
-router.get('/', getCategories);
+router.get('/', categoryController.getCategories);
 
 export default router;

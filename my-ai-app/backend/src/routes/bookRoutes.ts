@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { getBooks, getBook, createBook, updateBook, deleteBook } from '../controllers/bookController';
+import * as bookController from '../controllers/bookController';
 
 const router = new Router({ prefix: '/books' });
 
@@ -65,8 +65,8 @@ const router = new Router({ prefix: '/books' });
  *       201:
  *         description: Book created
  */
-router.get('/', getBooks);
-router.post('/', createBook);
+router.get('/', bookController.getBooks);
+router.post('/', bookController.createBook);
 
 /**
  * @swagger
@@ -130,8 +130,8 @@ router.post('/', createBook);
  *       404:
  *         description: Book not found
  */
-router.get('/:id', getBook);
-router.put('/:id', updateBook);
-router.delete('/:id', deleteBook);
+router.get('/:id', bookController.getBook);
+router.put('/:id', bookController.updateBook);
+router.delete('/:id', bookController.deleteBook);
 
 export default router;
