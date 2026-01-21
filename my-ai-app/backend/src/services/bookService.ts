@@ -23,7 +23,12 @@ export const getAllBooks = async () => {
         SELECT row_to_json(cat.*) 
         FROM "Category" cat 
         WHERE cat.id = b."categoryId"
-      ) as category
+      ) as category,
+      (
+        SELECT ROUND(AVG(r.rating), 1)
+        FROM "Review" r
+        WHERE r."bookId" = b.id
+      ) as "avgRating"
     FROM "Book" b
     ORDER BY b."createdAt" DESC
   `;

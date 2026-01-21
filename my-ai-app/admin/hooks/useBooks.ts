@@ -12,6 +12,10 @@ type Book = {
   description?: string;
   category?: { name: string };
   copies: { id: number; status: string }[];
+  avgRating?: number;
+  categoryId?: number;
+  isAvailable?: boolean;
+  isBorrowed?: boolean;
 };
 
 export function useBooks() {

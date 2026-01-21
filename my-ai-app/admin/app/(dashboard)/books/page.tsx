@@ -329,6 +329,7 @@ export default function BooksPage() {
               <TableHead>作者 (Author)</TableHead>
               <TableHead>ISBN</TableHead>
               <TableHead>状态 (Status)</TableHead>
+              <TableHead>评分 (Rating)</TableHead>
               <TableHead>库存 (Copies)</TableHead>
               <TableHead>操作 (Actions)</TableHead>
             </TableRow>
@@ -368,6 +369,16 @@ export default function BooksPage() {
                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                             可借阅
                          </span>
+                    )}
+                </TableCell>
+                <TableCell>
+                    {book.avgRating ? (
+                        <div className="flex items-center text-yellow-500 font-bold">
+                            <span className="text-sm">★</span>
+                            <span className="ml-1 text-gray-900 text-sm">{Number(book.avgRating).toFixed(1)}</span>
+                        </div>
+                    ) : (
+                        <span className="text-gray-400 text-xs text-nowrap">暂无评价</span>
                     )}
                 </TableCell>
                 <TableCell>{book.copies?.length || 0}</TableCell>
