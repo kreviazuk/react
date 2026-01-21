@@ -6,6 +6,7 @@ import uploadRoutes from './upload';
 import categoryRoutes from './categoryRoutes';
 import loanRoutes from './loanRoutes';
 import favoriteRoutes from './favoriteRoutes';
+import reviewRoutes from './reviewRoutes';
 
 const router = new Router({ prefix: '/api' });
 
@@ -18,5 +19,6 @@ router.use(uploadRoutes.routes(), uploadRoutes.allowedMethods());
 router.use(categoryRoutes.routes(), categoryRoutes.allowedMethods());
 router.use(loanRoutes.routes(), loanRoutes.allowedMethods());
 router.use(favoriteRoutes.routes(), favoriteRoutes.allowedMethods());
+router.use(reviewRoutes.routes(), reviewRoutes.allowedMethods());
 
 export default router;

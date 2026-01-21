@@ -44,6 +44,7 @@ model User {
   loans     Loan[] // 用户借阅记录
   reserves  Reservation[] // 预约记录
   favorites Favorite[] // 收藏记录
+  reviews   Review[] // 书评记录
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +79,7 @@ model Book {
   // 预约队列
   reservations Reservation[]
   favorites    Favorite[]
+  reviews      Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -141,6 +143,22 @@ model Favorite {
 
   user User @relation(fields: [userId], references: [id])
   book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId])
+}
+
+model Review {
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  bookId  Int
+  rating  Int // 1-5 星
+  content String?
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, bookId])
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
-import { Book, LayoutDashboard, LogOut, ClipboardCheck, LucideIcon, Heart } from "lucide-react";
+import { Book, LayoutDashboard, LogOut, ClipboardCheck, LucideIcon, Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -43,6 +43,7 @@ export default function DashboardLayout({
     { name: "Books", href: "/books", icon: Book, roles: ["USER", "ADMIN"] },
     { name: "借阅审核", href: "/loans/review", icon: ClipboardCheck, roles: ["ADMIN"] },
     { name: "收藏列表", href: "/favorites", icon: Heart, roles: ["ADMIN"] },
+    { name: "书评管理", href: "/reviews", icon: Star, roles: ["ADMIN"] },
   ];
 
   // 根据用户角色过滤菜单

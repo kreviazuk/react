@@ -9,6 +9,8 @@ import { loansApi } from "@/api/loans";
 import { favoritesApi } from "@/api/favorites";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { reviewsApi, Review } from "@/api/reviews";
 
 export default function BookDetailPage() {
     const { id } = useParams() as { id: string };
@@ -34,6 +36,15 @@ export default function BookDetailPage() {
              const res = await favoritesApi.getFavorites();
              return res.data.data as Book[];
         }
+    });
+
+    // 3. Reviews
+    const [rating, setRating] = useState(0);
+    const [reviewContent, setReviewContent] = useState("");
+
+    const { data: reviewsData, refetch: refetchReviews } = useQuery({
+        queryKey: ["reviews", id],
+        queryFn: () => reviewsApi.getReviews(Number(id)).then(res => res.data)
     });
 
     // --- Computed State ---
@@ -79,6 +90,17 @@ export default function BookDetailPage() {
         onError: () => {
             toast.error("Failed to update favorites");
         }
+    });
+
+    const addReviewMutation = useMutation({
+        mutationFn: () => reviewsApi.createReview(Number(id), { rating, content: reviewContent }),
+        onSuccess: () => {
+            toast.success("Review posted!");
+            setRating(0);
+            setReviewContent("");
+            refetchReviews();
+        },
+        onError: (err: any) => toast.error(err.response?.data?.error || "Failed to post review")
     });
 
     // --- Handlers ---
@@ -188,14 +210,26 @@ export default function BookDetailPage() {
                     <p className="text-gray-500 text-lg">{book.author}</p>
                     
                     {/* Rating */}
-                    <div className="flex items-center justify-center gap-1 text-teal-800 pt-1">
-                        <div className="flex">
-                            {[1, 2, 3, 4].map(i => <Star key={i} size={16} fill="currentColor" className="text-teal-700" />)}
-                            <Star size={16} fill="currentColor" className="text-teal-700/30" />
+                    {reviewsData?.stats ? (
+                        <div className="flex items-center justify-center gap-1 text-teal-800 pt-1">
+                            <div className="flex">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <Star 
+                                        key={i} 
+                                        size={16} 
+                                        fill={i <= Math.round(reviewsData.stats.average) ? "currentColor" : "none"} 
+                                        className={i <= Math.round(reviewsData.stats.average) ? "text-yellow-400" : "text-gray-300"} 
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-sm font-bold ml-1 text-gray-900">{Number(reviewsData.stats.average).toFixed(1)}</span>
+                            <span className="text-sm text-gray-400">({reviewsData.stats.count})</span>
                         </div>
-                        <span className="text-sm font-bold ml-1 text-gray-900">4.5</span>
-                        <span className="text-sm text-gray-400">(302)</span>
-                    </div>
+                    ): (
+                        <div className="flex items-center justify-center gap-1 text-teal-800 pt-1">
+                            <span className="text-sm text-gray-400">No ratings yet</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Tags */}
@@ -271,6 +305,76 @@ export default function BookDetailPage() {
                         )}
                     </div>
                 </div>
+
+                 {/* Reviews Section */}
+                 <div className="mb-10">
+                    <h3 className="font-bold text-gray-900 text-lg mb-4">Reviews</h3>
+                    
+                    {/* Review Stats */}
+                    {reviewsData?.stats && (
+                        <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-xl">
+                            <div className="text-center border-r border-gray-200 pr-4">
+                                <div className="text-3xl font-bold text-gray-900">{Number(reviewsData.stats.average).toFixed(1)}</div>
+                                <div className="flex justify-center text-yellow-400 text-xs text-center">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <span key={i} className={i < Math.round(Number(reviewsData.stats.average)) ? "text-yellow-400" : "text-gray-300"}>★</span>
+                                    ))}
+                                </div>
+                                <div className="text-xs text-gray-400 mt-1">{reviewsData.stats.count} reviews</div>
+                            </div>
+                            <div className="flex-1">
+                                <div className="text-sm text-gray-500">
+                                    {reviewsData.stats.count > 0 ? "Community feedback" : "No reviews yet. Be the first!"}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Review List */}
+                    <div className="space-y-6 mb-8">
+                        {reviewsData?.data.map((review: Review) => (
+                            <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="font-bold text-gray-900 text-sm">{review.user.name || "Anonymous"}</div>
+                                    <div className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</div>
+                                </div>
+                                <div className="flex text-yellow-400 text-xs mb-2">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} className={i < review.rating ? "text-yellow-400" : "text-gray-300"} />
+                                    ))}
+                                </div>
+                                <p className="text-gray-600 text-sm leading-relaxed">{review.content}</p>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {/* Review Form */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <h4 className="font-bold text-gray-900 text-sm mb-3">Write a Review</h4>
+                        <div className="flex gap-1 mb-3">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button key={star} onClick={() => setRating(star)} className={cn("transition-colors", star <= rating ? "text-yellow-400" : "text-gray-300")}>
+                                    <Star size={24} fill="currentColor" />
+                                </button>
+                            ))}
+                        </div>
+                        <textarea 
+                            className="w-full p-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 mb-3 bg-white"
+                            placeholder="Share your thoughts about this book..."
+                            rows={3}
+                            value={reviewContent}
+                            onChange={(e) => setReviewContent(e.target.value)}
+                        ></textarea>
+                        <Button 
+                            onClick={() => addReviewMutation.mutate()} 
+                            disabled={addReviewMutation.isPending || rating === 0}
+                            className="w-full bg-gray-900 text-white rounded-lg py-2 text-sm font-bold hover:bg-gray-800"
+                        >
+                            {addReviewMutation.isPending ? "Posting..." : "Post Review"}
+                        </Button>
+                    </div>
+                </div>
+
             </div>
 
             {/* Bottom Action Bar */}
