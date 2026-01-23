@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
-import dotenv from 'dotenv';
 import serve from 'koa-static';
 import mount from 'koa-mount';
 import path from 'path';
@@ -10,13 +10,13 @@ import { koaSwagger } from 'koa2-swagger-ui';
 import { swaggerSpec } from './config/swagger';
 import router from './routes';
 
-dotenv.config();
+
 
 const app = new Koa();
 const PORT = process.env.PORT || 8000;
 
 app.use(koaSwagger({
-    routePrefix: '/docs', 
+    routePrefix: '/docs',
     swaggerOptions: { spec: swaggerSpec as Record<string, unknown> },
 }));
 
@@ -49,5 +49,5 @@ app.use(async (ctx, next) => {
 app.use(router.routes()).use(router.allowedMethods());
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
