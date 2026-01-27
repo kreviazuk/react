@@ -1,19 +1,34 @@
 import { Context } from 'koa';
 import * as reviewService from '../services/reviewService';
+import { createReviewSchema } from '../schemas/reviewSchema';
+import { idParamSchema, bookIdParamSchema } from '../schemas/commonSchema';
 
 export const create = async (ctx: Context) => {
     const userId = ctx.state.user.userId;
-    const { bookId } = ctx.params;
-    const { rating, content } = ctx.request.body as any;
 
-    if (!rating || rating < 1 || rating > 5) {
+    // Validate bookId in params
+    const paramValidation = bookIdParamSchema.safeParse(ctx.params);
+    if (!paramValidation.success) {
         ctx.status = 400;
-        ctx.body = { error: "Rating must be between 1 and 5" };
+        ctx.body = { error: "Invalid Book ID" };
         return;
     }
+    const { bookId } = paramValidation.data;
+
+    // Validate body
+    const bodyValidation = createReviewSchema.safeParse(ctx.request.body);
+    if (!bodyValidation.success) {
+        ctx.status = 400;
+        ctx.body = {
+            error: "Validation Failed",
+            details: bodyValidation.error.flatten().fieldErrors
+        };
+        return;
+    }
+    const { rating, content } = bodyValidation.data;
 
     try {
-        const review = await reviewService.createReview(userId, Number(bookId), rating, content);
+        const review = await reviewService.createReview(userId, bookId, rating, content);
         ctx.body = { success: true, data: review };
     } catch (error: any) {
         ctx.status = 400;
@@ -22,9 +37,16 @@ export const create = async (ctx: Context) => {
 };
 
 export const list = async (ctx: Context) => {
-    const { bookId } = ctx.params;
-    const reviews = await reviewService.getBookReviews(Number(bookId));
-    const stats = await reviewService.getBookRatingStats(Number(bookId));
+    const paramValidation = bookIdParamSchema.safeParse(ctx.params);
+    if (!paramValidation.success) {
+        ctx.status = 400;
+        ctx.body = { error: "Invalid Book ID" };
+        return;
+    }
+    const { bookId } = paramValidation.data;
+
+    const reviews = await reviewService.getBookReviews(bookId);
+    const stats = await reviewService.getBookRatingStats(bookId);
     ctx.body = { success: true, data: reviews, stats };
 };
 
@@ -36,10 +58,17 @@ export const adminList = async (ctx: Context) => {
 export const remove = async (ctx: Context) => {
     const userId = ctx.state.user.userId;
     const isAdmin = ctx.state.user.role === 'ADMIN';
-    const { id } = ctx.params;
+
+    const validation = idParamSchema.safeParse(ctx.params);
+    if (!validation.success) {
+        ctx.status = 400;
+        ctx.body = { error: "Invalid ID" };
+        return;
+    }
+    const { id } = validation.data;
 
     try {
-        await reviewService.deleteReview(Number(id), userId, isAdmin);
+        await reviewService.deleteReview(id, userId, isAdmin);
         ctx.body = { success: true };
     } catch (error: any) {
         ctx.status = 403;

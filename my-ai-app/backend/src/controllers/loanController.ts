@@ -1,6 +1,13 @@
 import { Context } from 'koa';
 import * as loanService from '../services/loanService';
-import { LoanStatus } from '@prisma/client';
+import {
+  applyLoanSchema,
+  getMyLoansQuerySchema,
+  getAllLoansQuerySchema,
+  approveLoanSchema,
+  rejectLoanSchema
+} from '../schemas/loanSchema';
+import { idParamSchema } from '../schemas/commonSchema';
 
 // ============ 用户接口 ============
 
@@ -9,15 +16,20 @@ import { LoanStatus } from '@prisma/client';
  * POST /api/loans/apply
  */
 export const applyLoan = async (ctx: Context) => {
-  const userId = ctx.state.user.userId;
-  const { copyId } = ctx.request.body as { copyId: number };
-  
-  if (!copyId) {
+  const validation = applyLoanSchema.safeParse(ctx.request.body);
+
+  if (!validation.success) {
     ctx.status = 400;
-    ctx.body = { message: '请提供书籍副本ID' };
+    ctx.body = {
+      message: '参数错误',
+      errors: validation.error.flatten().fieldErrors
+    };
     return;
   }
-  
+
+  const userId = ctx.state.user.userId;
+  const { copyId } = validation.data;
+
   try {
     const loan = await loanService.applyLoan(userId, copyId);
     ctx.status = 201;
@@ -31,7 +43,7 @@ export const applyLoan = async (ctx: Context) => {
       COPY_NOT_AVAILABLE: { status: 400, message: '该书籍当前不可借阅' },
       ALREADY_APPLIED: { status: 400, message: '您已申请过该书籍' },
     };
-    
+
     const err = errorMap[error.message] || { status: 500, message: '申请失败' };
     ctx.status = err.status;
     ctx.body = { message: err.message };
@@ -43,14 +55,19 @@ export const applyLoan = async (ctx: Context) => {
  * GET /api/loans/my
  */
 export const getMyLoans = async (ctx: Context) => {
+  const validation = getMyLoansQuerySchema.safeParse(ctx.query);
+
+  if (!validation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid query parameters' };
+    return;
+  }
+
   const userId = ctx.state.user.userId;
-  const status = ctx.query.status as string | undefined;
-  
-  const loans = await loanService.getMyLoans(
-    userId,
-    status as LoanStatus | undefined
-  );
-  
+  const { status } = validation.data;
+
+  const loans = await loanService.getMyLoans(userId, status);
+
   ctx.body = { data: loans };
 };
 
@@ -59,11 +76,19 @@ export const getMyLoans = async (ctx: Context) => {
  * GET /api/loans/my/:id
  */
 export const getMyLoanById = async (ctx: Context) => {
+  const validation = idParamSchema.safeParse(ctx.params);
+
+  if (!validation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid ID' };
+    return;
+  }
+
   const userId = ctx.state.user.userId;
-  const loanId = parseInt(ctx.params.id);
-  
+  const { id } = validation.data;
+
   try {
-    const loan = await loanService.getMyLoanById(userId, loanId);
+    const loan = await loanService.getMyLoanById(userId, id);
     ctx.body = { data: loan };
   } catch (error: any) {
     if (error.message === 'LOAN_NOT_FOUND') {
@@ -82,14 +107,22 @@ export const getMyLoanById = async (ctx: Context) => {
  * GET /api/loans
  */
 export const getAllLoans = async (ctx: Context) => {
-  const { status, page, limit } = ctx.query;
-  
+  const validation = getAllLoansQuerySchema.safeParse(ctx.query);
+
+  if (!validation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid query parameters' };
+    return;
+  }
+
+  const { status, page, limit } = validation.data;
+
   const result = await loanService.getAllLoans({
-    status: status as LoanStatus | undefined,
-    page: page ? parseInt(page as string) : undefined,
-    limit: limit ? parseInt(limit as string) : undefined,
+    status,
+    page,
+    limit,
   });
-  
+
   ctx.body = {
     data: result.loans,
     pagination: {
@@ -114,10 +147,18 @@ export const getPendingLoans = async (ctx: Context) => {
  * GET /api/loans/:id
  */
 export const getLoanById = async (ctx: Context) => {
-  const loanId = parseInt(ctx.params.id);
-  
+  const validation = idParamSchema.safeParse(ctx.params);
+
+  if (!validation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid ID' };
+    return;
+  }
+
+  const { id } = validation.data;
+
   try {
-    const loan = await loanService.getLoanById(loanId);
+    const loan = await loanService.getLoanById(id);
     ctx.body = { data: loan };
   } catch (error: any) {
     if (error.message === 'LOAN_NOT_FOUND') {
@@ -134,11 +175,25 @@ export const getLoanById = async (ctx: Context) => {
  * PUT /api/loans/:id/approve
  */
 export const approveLoan = async (ctx: Context) => {
-  const loanId = parseInt(ctx.params.id);
-  const { borrowDays } = ctx.request.body as { borrowDays?: number };
-  
+  const paramValidation = idParamSchema.safeParse(ctx.params);
+  if (!paramValidation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid ID' };
+    return;
+  }
+
+  const bodyValidation = approveLoanSchema.safeParse(ctx.request.body);
+  if (!bodyValidation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid parameters', errors: bodyValidation.error.flatten().fieldErrors };
+    return;
+  }
+
+  const { id } = paramValidation.data;
+  const { borrowDays } = bodyValidation.data;
+
   try {
-    const loan = await loanService.approveLoan(loanId, borrowDays);
+    const loan = await loanService.approveLoan(id, borrowDays);
     ctx.body = {
       message: '借阅已批准',
       data: loan,
@@ -148,7 +203,7 @@ export const approveLoan = async (ctx: Context) => {
       LOAN_NOT_FOUND: { status: 404, message: '借阅记录不存在' },
       INVALID_STATUS: { status: 400, message: '当前状态不可审核' },
     };
-    
+
     const err = errorMap[error.message] || { status: 500, message: '操作失败' };
     ctx.status = err.status;
     ctx.body = { message: err.message };
@@ -160,17 +215,25 @@ export const approveLoan = async (ctx: Context) => {
  * PUT /api/loans/:id/reject
  */
 export const rejectLoan = async (ctx: Context) => {
-  const loanId = parseInt(ctx.params.id);
-  const { reason } = ctx.request.body as { reason: string };
-  
-  if (!reason) {
+  const paramValidation = idParamSchema.safeParse(ctx.params);
+  if (!paramValidation.success) {
     ctx.status = 400;
-    ctx.body = { message: '请提供拒绝理由' };
+    ctx.body = { message: 'Invalid ID' };
     return;
   }
-  
+
+  const bodyValidation = rejectLoanSchema.safeParse(ctx.request.body);
+  if (!bodyValidation.success) {
+    ctx.status = 400;
+    ctx.body = { message: '拒绝理由必填', errors: bodyValidation.error.flatten().fieldErrors };
+    return;
+  }
+
+  const { id } = paramValidation.data;
+  const { reason } = bodyValidation.data;
+
   try {
-    const loan = await loanService.rejectLoan(loanId, reason);
+    const loan = await loanService.rejectLoan(id, reason);
     ctx.body = {
       message: '借阅已拒绝',
       data: loan,
@@ -180,7 +243,7 @@ export const rejectLoan = async (ctx: Context) => {
       LOAN_NOT_FOUND: { status: 404, message: '借阅记录不存在' },
       INVALID_STATUS: { status: 400, message: '当前状态不可审核' },
     };
-    
+
     const err = errorMap[error.message] || { status: 500, message: '操作失败' };
     ctx.status = err.status;
     ctx.body = { message: err.message };
@@ -192,10 +255,17 @@ export const rejectLoan = async (ctx: Context) => {
  * PUT /api/loans/:id/return
  */
 export const returnLoan = async (ctx: Context) => {
-  const loanId = parseInt(ctx.params.id);
-  
+  const validation = idParamSchema.safeParse(ctx.params);
+  if (!validation.success) {
+    ctx.status = 400;
+    ctx.body = { message: 'Invalid ID' };
+    return;
+  }
+
+  const { id } = validation.data;
+
   try {
-    const loan = await loanService.returnLoan(loanId);
+    const loan = await loanService.returnLoan(id);
     ctx.body = {
       message: '已确认归还',
       data: loan,
@@ -205,7 +275,7 @@ export const returnLoan = async (ctx: Context) => {
       LOAN_NOT_FOUND: { status: 404, message: '借阅记录不存在' },
       INVALID_STATUS: { status: 400, message: '当前状态不可归还' },
     };
-    
+
     const err = errorMap[error.message] || { status: 500, message: '操作失败' };
     ctx.status = err.status;
     ctx.body = { message: err.message };

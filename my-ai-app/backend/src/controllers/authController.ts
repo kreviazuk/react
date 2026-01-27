@@ -1,14 +1,20 @@
 import { Context } from 'koa';
 import * as authService from '../services/authService';
+import { registerSchema, loginSchema } from '../schemas/authSchema';
 
 export const register = async (ctx: Context) => {
-  const { email, password, name } = ctx.request.body as any;
+  const validation = registerSchema.safeParse(ctx.request.body);
 
-  if (!email || !password) {
+  if (!validation.success) {
     ctx.status = 400;
-    ctx.body = { message: '邮箱和密码不能为空' };
+    ctx.body = {
+      message: '参数错误',
+      errors: validation.error.flatten().fieldErrors
+    };
     return;
   }
+
+  const { email, password, name } = validation.data;
 
   try {
     const user = await authService.register({ email, password, name });
@@ -26,13 +32,18 @@ export const register = async (ctx: Context) => {
 };
 
 export const login = async (ctx: Context) => {
-  const { email, password } = ctx.request.body as any;
+  const validation = loginSchema.safeParse(ctx.request.body);
 
-  if (!email || !password) {
+  if (!validation.success) {
     ctx.status = 400;
-    ctx.body = { message: '邮箱和密码不能为空' };
+    ctx.body = {
+      message: '参数错误',
+      errors: validation.error.flatten().fieldErrors
+    };
     return;
   }
+
+  const { email, password } = validation.data;
 
   try {
     const result = await authService.login({ email, password });

@@ -1,6 +1,7 @@
 
 import { Context } from 'koa';
 import * as favoriteService from '../services/favoriteService';
+import { idParamSchema } from '../schemas/commonSchema';
 
 export const getFavorites = async (ctx: Context) => {
     const userId = ctx.state.user.userId;
@@ -10,10 +11,18 @@ export const getFavorites = async (ctx: Context) => {
 
 export const toggleFavorite = async (ctx: Context) => {
     const userId = ctx.state.user.userId;
-    const bookId = Number(ctx.params.id);
-    
+
+    // Validate id in params (which is bookId)
+    const validation = idParamSchema.safeParse(ctx.params);
+    if (!validation.success) {
+        ctx.status = 400;
+        ctx.body = { success: false, error: "Invalid ID" };
+        return;
+    }
+    const { id: bookId } = validation.data;
+
     const exists = await favoriteService.checkFavorite(userId, bookId);
-    
+
     if (exists) {
         await favoriteService.removeFavorite(userId, bookId);
         ctx.body = { success: true, isFavorite: false, message: "Removed from favorites" };
@@ -24,10 +33,18 @@ export const toggleFavorite = async (ctx: Context) => {
 };
 
 export const checkStatus = async (ctx: Context) => {
-     const userId = ctx.state.user.userId;
-     const bookId = Number(ctx.params.id);
-     const isFavorite = await favoriteService.checkFavorite(userId, bookId);
-     ctx.body = { success: true, isFavorite };
+    const userId = ctx.state.user.userId;
+
+    const validation = idParamSchema.safeParse(ctx.params);
+    if (!validation.success) {
+        ctx.status = 400;
+        ctx.body = { success: false, error: "Invalid ID" };
+        return;
+    }
+    const { id: bookId } = validation.data;
+
+    const isFavorite = await favoriteService.checkFavorite(userId, bookId);
+    ctx.body = { success: true, isFavorite };
 }
 
 export const getAll = async (ctx: Context) => {
